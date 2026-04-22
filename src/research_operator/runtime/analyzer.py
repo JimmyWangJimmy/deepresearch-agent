@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+from research_operator.runtime.providers import CollectedSource
 from research_operator.schemas import Finding, RunPlan, TaskType
 
 
-def generate_findings(task: str, plan: RunPlan) -> list[Finding]:
+def generate_findings(task: str, plan: RunPlan, collected: list[CollectedSource]) -> list[Finding]:
     base = [
         Finding(
             title="Agent-native execution model",
@@ -75,5 +76,35 @@ def generate_findings(task: str, plan: RunPlan) -> list[Finding]:
             confidence="high",
         )
     )
+    if collected:
+        base.append(
+            Finding(
+                title="Evidence intake",
+                detail=(
+                    f"The run ingested {len(collected)} source(s) spanning "
+                    f"{sum(item.record.content_chars for item in collected)} characters of raw content."
+                ),
+                confidence="high",
+            )
+        )
+        first = collected[0].record
+        if first.excerpt:
+            base.append(
+                Finding(
+                    title="First-source preview",
+                    detail=f"{first.label}: {first.excerpt}",
+                    confidence="medium",
+                )
+            )
+    else:
+        base.append(
+            Finding(
+                title="No evidence attached",
+                detail=(
+                    "This run did not include explicit files or URLs. It still produced artifacts, "
+                    "but live research providers need to be connected for evidence-backed output."
+                ),
+                confidence="medium",
+            )
+        )
     return base
-

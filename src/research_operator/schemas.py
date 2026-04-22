@@ -27,6 +27,7 @@ class StepStatus(str, Enum):
 class OutputFormat(str, Enum):
     MARKDOWN = "markdown"
     JSON = "json"
+    HTML = "html"
 
 
 class PlanStep(BaseModel):
@@ -53,12 +54,16 @@ class SourceRecord(BaseModel):
     label: str
     kind: str
     locator: str
+    excerpt: str = ""
+    content_chars: int = 0
 
 
 class RunArtifacts(BaseModel):
     manifest_path: Path
     report_path: Path
     findings_path: Path
+    html_report_path: Path
+    source_ledger_path: Path
 
 
 class RunResult(BaseModel):
@@ -72,4 +77,3 @@ class RunResult(BaseModel):
         default_factory=lambda: [OutputFormat.MARKDOWN, OutputFormat.JSON]
     )
     artifacts: RunArtifacts | None = None
-

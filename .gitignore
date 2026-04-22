@@ -3,6 +3,7 @@ __pycache__/
 .pytest_cache/
 *.pyc
 artifacts/
+artifacts_demo/
+demo/
 tmp_artifacts/
 tmp_artifacts_*/
-

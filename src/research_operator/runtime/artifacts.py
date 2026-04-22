@@ -17,21 +17,30 @@ def write_artifacts(result: RunResult, base_dir: Path) -> RunResult:
     manifest_path = run_dir / "run_manifest.json"
     report_path = run_dir / "research_report.md"
     findings_path = run_dir / "findings.json"
+    html_report_path = run_dir / "research_report.html"
+    source_ledger_path = run_dir / "source_ledger.json"
+
+    result.artifacts = RunArtifacts(
+        manifest_path=manifest_path,
+        report_path=report_path,
+        findings_path=findings_path,
+        html_report_path=html_report_path,
+        source_ledger_path=source_ledger_path,
+    )
 
     manifest_path.write_text(
         json.dumps(result.model_dump(mode="json"), indent=2, ensure_ascii=False),
         encoding="utf-8",
     )
     report_path.write_text(render_markdown_report(result), encoding="utf-8")
+    html_report_path.write_text(render_html_report(result), encoding="utf-8")
     findings_path.write_text(
         json.dumps([item.model_dump(mode="json") for item in result.findings], indent=2, ensure_ascii=False),
         encoding="utf-8",
     )
-
-    result.artifacts = RunArtifacts(
-        manifest_path=manifest_path,
-        report_path=report_path,
-        findings_path=findings_path,
+    source_ledger_path.write_text(
+        json.dumps([item.model_dump(mode="json") for item in result.sources], indent=2, ensure_ascii=False),
+        encoding="utf-8",
     )
     return result
 
@@ -59,7 +68,91 @@ def render_markdown_report(result: RunResult) -> str:
         for source in result.sources:
             lines.append(f"- `{source.kind}` {source.label}: {source.locator}")
     else:
-        lines.append("- No live sources were collected in scaffold mode.")
+        lines.append("- No explicit sources attached to this run.")
 
     return "\n".join(lines) + "\n"
 
+
+def render_html_report(result: RunResult) -> str:
+    findings = "".join(
+        f"<li><strong>{escape_html(item.title)}</strong> "
+        f"<span>({escape_html(item.confidence)})</span>: {escape_html(item.detail)}</li>"
+        for item in result.findings
+    )
+    sources = "".join(
+        (
+            "<li>"
+            f"<strong>{escape_html(source.label)}</strong> "
+            f"<span>{escape_html(source.kind)}</span> "
+            f"<code>{escape_html(source.locator)}</code>"
+            f"<p>{escape_html(source.excerpt)}</p>"
+            "</li>"
+        )
+        for source in result.sources
+    )
+    if not sources:
+        sources = "<li>No explicit sources attached to this run.</li>"
+
+    return f"""<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>DeepResearch Agent Run {escape_html(result.run_id)}</title>
+    <style>
+      :root {{
+        --bg: #f6f2e8;
+        --card: #fffdf8;
+        --ink: #141312;
+        --muted: #665f55;
+        --accent: #0f766e;
+        --line: #ddd4c5;
+      }}
+      body {{ font-family: Georgia, 'Iowan Old Style', serif; background: var(--bg); color: var(--ink); margin: 0; }}
+      main {{ max-width: 960px; margin: 0 auto; padding: 48px 24px 80px; }}
+      h1, h2 {{ margin: 0 0 16px; }}
+      .hero {{ padding: 28px; background: linear-gradient(135deg, #fffefb, #efe5d2); border: 1px solid var(--line); border-radius: 20px; }}
+      .grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; margin-top: 24px; }}
+      .card {{ background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; }}
+      ul {{ padding-left: 20px; }}
+      code {{ background: #f1ecdf; padding: 2px 6px; border-radius: 6px; }}
+      .meta {{ color: var(--muted); }}
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="hero">
+        <p class="meta">DeepResearch Agent run</p>
+        <h1>{escape_html(result.task)}</h1>
+        <p>Run ID: <code>{escape_html(result.run_id)}</code></p>
+        <p>Created at: <code>{escape_html(str(result.created_at))}</code></p>
+      </section>
+      <section class="grid">
+        <article class="card">
+          <h2>Plan</h2>
+          <ul>
+            {"".join(f"<li><strong>{escape_html(step.title)}</strong>: {escape_html(step.description)}</li>" for step in result.plan.steps)}
+          </ul>
+        </article>
+        <article class="card">
+          <h2>Findings</h2>
+          <ul>{findings}</ul>
+        </article>
+      </section>
+      <section class="card" style="margin-top: 24px;">
+        <h2>Sources</h2>
+        <ul>{sources}</ul>
+      </section>
+    </main>
+  </body>
+</html>
+"""
+
+
+def escape_html(value: str) -> str:
+    return (
+        value.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+    )

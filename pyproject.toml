@@ -1,0 +1,35 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "deepresearch-agent"
+version = "0.1.0"
+description = "Agent-native, CLI-first research operator for information collection, processing, and artifact delivery."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [
+  { name = "Jimmy Wang" }
+]
+dependencies = [
+  "pydantic>=2.11.0",
+  "typer>=0.16.0",
+  "rich>=14.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.4.0",
+]
+
+[project.scripts]
+dra = "research_operator.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/research_operator"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+

@@ -131,3 +131,87 @@ def test_runs_lists_history(tmp_path):
     payload = json.loads(result.stdout)
     assert len(payload) == 2
     assert {item["task"] for item in payload} == {"任务一", "任务二"}
+
+
+def test_watch_create_and_run_detects_changes(tmp_path):
+    watch_file = tmp_path / "watched.txt"
+    watch_file.write_text("版本一", encoding="utf-8")
+    create = runner.invoke(
+        app,
+        [
+            "watch",
+            "create",
+            "机器人监控",
+            "--task",
+            "监控机器人赛道变化并生成摘要",
+            "--file",
+            str(watch_file),
+            "--watches-dir",
+            str(tmp_path / "watches"),
+        ],
+    )
+    assert create.exit_code == 0
+    created = json.loads(create.stdout)
+
+    first_run = runner.invoke(
+        app,
+        [
+            "watch",
+            "run",
+            created["watch_id"],
+            "--watches-dir",
+            str(tmp_path / "watches"),
+            "--artifacts-dir",
+            str(tmp_path / "artifacts"),
+        ],
+    )
+    assert first_run.exit_code == 0
+    first_payload = json.loads(first_run.stdout)
+    assert len(first_payload["changed_sources"]) == 1
+    assert first_payload["new_run_id"] is not None
+
+    second_run = runner.invoke(
+        app,
+        [
+            "watch",
+            "run",
+            created["watch_id"],
+            "--watches-dir",
+            str(tmp_path / "watches"),
+            "--artifacts-dir",
+            str(tmp_path / "artifacts"),
+        ],
+    )
+    assert second_run.exit_code == 0
+    second_payload = json.loads(second_run.stdout)
+    assert len(second_payload["changed_sources"]) == 0
+    assert second_payload["new_run_id"] is None
+
+    watch_file.write_text("版本二，新增融资披露", encoding="utf-8")
+    third_run = runner.invoke(
+        app,
+        [
+            "watch",
+            "run",
+            created["watch_id"],
+            "--watches-dir",
+            str(tmp_path / "watches"),
+            "--artifacts-dir",
+            str(tmp_path / "artifacts"),
+        ],
+    )
+    assert third_run.exit_code == 0
+    third_payload = json.loads(third_run.stdout)
+    assert len(third_payload["changed_sources"]) == 1
+    assert third_payload["new_run_id"] is not None
+    digest_path = tmp_path / "watches" / created["watch_id"] / "last_digest.md"
+    assert digest_path.exists()
+    assert "Changed Sources" in digest_path.read_text(encoding="utf-8")
+
+
+def test_providers_lists_available_backends():
+    result = runner.invoke(app, ["providers", "--json"])
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert "attached" in payload
+    assert "web_fetch" in payload

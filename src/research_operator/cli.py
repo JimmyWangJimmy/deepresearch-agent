@@ -11,8 +11,18 @@ from rich.table import Table
 
 from research_operator.config import AppConfig
 from research_operator.runtime.engine import execute_task
+from research_operator.runtime.monitoring import (
+    build_watch_sources,
+    execute_watch,
+    list_watches,
+    save_watch,
+)
+from research_operator.runtime.provider_registry import ProviderRegistry
+from research_operator.schemas import WatchSpec
 
 app = typer.Typer(help="DeepResearch Agent CLI")
+watch_app = typer.Typer(help="Create and execute recurring watch definitions.")
+app.add_typer(watch_app, name="watch")
 console = Console()
 
 
@@ -163,6 +173,106 @@ def export(
     output.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(source_path, output)
     typer.echo(str(output))
+
+
+@app.command()
+def providers(
+    json_output: bool = typer.Option(
+        False,
+        "--json",
+        help="Print providers as JSON.",
+    ),
+) -> None:
+    registry = ProviderRegistry()
+    available = registry.available()
+    if json_output:
+        typer.echo(json.dumps(available, indent=2, ensure_ascii=False))
+        return
+    table = Table(title="Providers")
+    table.add_column("Provider")
+    for name in available:
+        table.add_row(name)
+    console.print(table)
+
+
+@watch_app.command("create")
+def watch_create(
+    name: str = typer.Argument(..., help="Watch name."),
+    task: str = typer.Option(..., "--task", help="Task to execute when sources change."),
+    url: list[str] = typer.Option(
+        None,
+        "--url",
+        help="Attach one or more URLs to monitor.",
+    ),
+    file: list[Path] = typer.Option(
+        None,
+        "--file",
+        help="Attach one or more local files to monitor.",
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+        readable=True,
+        resolve_path=True,
+    ),
+    watches_dir: Path = typer.Option(
+        AppConfig().watches_dir,
+        "--watches-dir",
+        help="Directory where watch definitions are stored.",
+    ),
+) -> None:
+    sources = build_watch_sources(urls=url, files=file)
+    if not sources:
+        raise typer.BadParameter("At least one --url or --file is required.")
+
+    spec = WatchSpec(name=name, task=task, sources=sources)
+    save_watch(spec, watches_dir)
+    typer.echo(json.dumps(spec.model_dump(mode="json"), indent=2, ensure_ascii=False))
+
+
+@watch_app.command("run")
+def watch_run(
+    watch_id: str = typer.Argument(..., help="Watch identifier."),
+    artifacts_dir: Path = typer.Option(
+        AppConfig().artifacts_dir,
+        "--artifacts-dir",
+        help="Directory where run artifacts are written.",
+    ),
+    watches_dir: Path = typer.Option(
+        AppConfig().watches_dir,
+        "--watches-dir",
+        help="Directory where watch definitions are stored.",
+    ),
+) -> None:
+    execution = execute_watch(watch_id, artifacts_dir=artifacts_dir, watches_dir=watches_dir)
+    typer.echo(json.dumps(execution.model_dump(mode="json"), indent=2, ensure_ascii=False))
+
+
+@watch_app.command("list")
+def watch_list(
+    watches_dir: Path = typer.Option(
+        AppConfig().watches_dir,
+        "--watches-dir",
+        help="Directory where watch definitions are stored.",
+    ),
+    json_output: bool = typer.Option(
+        False,
+        "--json",
+        help="Print watches as JSON.",
+    ),
+) -> None:
+    specs = list_watches(watches_dir)
+    if json_output:
+        typer.echo(json.dumps([spec.model_dump(mode="json") for spec in specs], indent=2, ensure_ascii=False))
+        return
+
+    table = Table(title="Watches")
+    table.add_column("Watch ID")
+    table.add_column("Name")
+    table.add_column("Sources")
+    table.add_column("Task")
+    for spec in specs:
+        table.add_row(spec.watch_id, spec.name, str(len(spec.sources)), spec.task)
+    console.print(table)
 
 
 if __name__ == "__main__":

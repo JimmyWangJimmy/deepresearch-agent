@@ -30,6 +30,11 @@ class OutputFormat(str, Enum):
     HTML = "html"
 
 
+class ProviderKind(str, Enum):
+    ATTACHED = "attached"
+    WEB_FETCH = "web_fetch"
+
+
 class PlanStep(BaseModel):
     id: str
     title: str
@@ -56,6 +61,12 @@ class SourceRecord(BaseModel):
     locator: str
     excerpt: str = ""
     content_chars: int = 0
+    provider: ProviderKind = ProviderKind.ATTACHED
+
+
+class CollectedSource(BaseModel):
+    record: SourceRecord
+    content: str
 
 
 class RunArtifacts(BaseModel):
@@ -77,3 +88,31 @@ class RunResult(BaseModel):
         default_factory=lambda: [OutputFormat.MARKDOWN, OutputFormat.JSON]
     )
     artifacts: RunArtifacts | None = None
+
+
+class WatchSource(BaseModel):
+    kind: str
+    locator: str
+
+
+class WatchSpec(BaseModel):
+    watch_id: str = Field(default_factory=lambda: uuid4().hex[:10])
+    name: str
+    task: str
+    created_at: datetime = Field(default_factory=utc_now)
+    sources: list[WatchSource]
+
+
+class WatchSourceState(BaseModel):
+    locator: str
+    digest: str
+    excerpt: str = ""
+    content_chars: int = 0
+
+
+class WatchExecution(BaseModel):
+    watch_id: str
+    executed_at: datetime = Field(default_factory=utc_now)
+    changed_sources: list[WatchSourceState] = Field(default_factory=list)
+    unchanged_sources: list[WatchSourceState] = Field(default_factory=list)
+    new_run_id: str | None = None

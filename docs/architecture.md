@@ -68,15 +68,18 @@ Current repository covers:
 
 - CLI entrypoint
 - Deterministic planner
+- Provider registry
+- Live web fetch and attached-file providers
 - Run manifest generation
 - Markdown and JSON artifacts
+- HTML report export
+- Watch definitions and change detection digests
 - Inspect command
 
 The next implementation increments should add:
 
-1. Real provider adapters
-2. File ingestion
+1. Additional provider adapters
+2. Richer file ingestion
 3. Source ledger with citations
-4. HTML and XLSX exports
-5. Monitoring jobs
-
+4. XLSX exports
+5. Multi-step analytical extraction

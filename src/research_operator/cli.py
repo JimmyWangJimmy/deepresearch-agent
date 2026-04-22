@@ -72,6 +72,8 @@ def run(
     summary.add_row("Task Type", result.plan.task_type.value)
     summary.add_row("Report", str(result.artifacts.report_path))
     summary.add_row("HTML", str(result.artifacts.html_report_path))
+    summary.add_row("Entities CSV", str(result.artifacts.entities_csv_path))
+    summary.add_row("Events CSV", str(result.artifacts.events_csv_path))
     summary.add_row("Manifest", str(result.artifacts.manifest_path))
     console.print(summary)
 
@@ -140,7 +142,7 @@ def runs(
 @app.command()
 def export(
     run_id: str = typer.Argument(..., help="Run identifier to export."),
-    format: str = typer.Option(..., "--format", help="Export format: html, markdown, manifest, findings, sources."),
+    format: str = typer.Option(..., "--format", help="Export format: html, markdown, manifest, findings, sources, entities, entities_csv, events, events_csv."),
     artifacts_dir: Path = typer.Option(
         AppConfig().artifacts_dir,
         "--artifacts-dir",
@@ -159,6 +161,10 @@ def export(
         "manifest": run_dir / "run_manifest.json",
         "findings": run_dir / "findings.json",
         "sources": run_dir / "source_ledger.json",
+        "entities": run_dir / "entities.json",
+        "entities_csv": run_dir / "entities.csv",
+        "events": run_dir / "events.json",
+        "events_csv": run_dir / "events.csv",
     }
     if format not in mapping:
         raise typer.BadParameter(f"Unsupported export format: {format}")
@@ -245,6 +251,26 @@ def watch_run(
 ) -> None:
     execution = execute_watch(watch_id, artifacts_dir=artifacts_dir, watches_dir=watches_dir)
     typer.echo(json.dumps(execution.model_dump(mode="json"), indent=2, ensure_ascii=False))
+
+
+@watch_app.command("run-all")
+def watch_run_all(
+    artifacts_dir: Path = typer.Option(
+        AppConfig().artifacts_dir,
+        "--artifacts-dir",
+        help="Directory where run artifacts are written.",
+    ),
+    watches_dir: Path = typer.Option(
+        AppConfig().watches_dir,
+        "--watches-dir",
+        help="Directory where watch definitions are stored.",
+    ),
+) -> None:
+    payload = [
+        execute_watch(spec.watch_id, artifacts_dir=artifacts_dir, watches_dir=watches_dir).model_dump(mode="json")
+        for spec in list_watches(watches_dir)
+    ]
+    typer.echo(json.dumps(payload, indent=2, ensure_ascii=False))
 
 
 @watch_app.command("list")

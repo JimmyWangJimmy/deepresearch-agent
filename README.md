@@ -20,6 +20,8 @@ Version `0.1.0` is the first deliverable scaffold. It includes:
 - Provider abstraction for attached files and live web fetch
 - A run manifest and artifact system
 - Markdown, HTML, JSON, and source-ledger outputs
+- Structured entity and event extraction
+- CSV exports for entities and events
 - An inspect command for previous runs
 - An export command for downstream delivery
 - Watch definitions for recurring change detection
@@ -40,8 +42,10 @@ dra inspect <run_id>
 dra runs
 dra providers
 dra export <run_id> --format html --output ./deliverables/report.html
+dra export <run_id> --format events_csv --output ./deliverables/events.csv
 dra watch create "OpenAI News" --task "监控OpenAI更新并生成摘要" --url https://openai.com/news/
 dra watch run <watch_id>
+dra watch run-all
 ```
 
 Artifacts are written to `./artifacts/<run_id>/`.
@@ -76,6 +80,8 @@ Every run must produce:
 - A source ledger
 - A human-readable report
 - Machine-readable JSON
+- Structured entities and events
+- CSV tables for downstream analysis
 
 ## Current commands
 
@@ -84,9 +90,10 @@ dra run "<task>" [--file PATH] [--url URL]
 dra inspect <run_id>
 dra runs
 dra providers
-dra export <run_id> --format html|markdown|manifest|findings|sources
+dra export <run_id> --format html|markdown|manifest|findings|sources|entities|entities_csv|events|events_csv
 dra watch create "<name>" --task "<task>" [--file PATH] [--url URL]
 dra watch run <watch_id>
+dra watch run-all
 dra watch list
 ```
 

@@ -1,10 +1,15 @@
 from __future__ import annotations
 
-from research_operator.runtime.providers import CollectedSource
-from research_operator.schemas import Finding, RunPlan, TaskType
+from research_operator.schemas import CollectedSource, ExtractedEntity, ExtractedEvent, Finding, RunPlan, TaskType
 
 
-def generate_findings(task: str, plan: RunPlan, collected: list[CollectedSource]) -> list[Finding]:
+def generate_findings(
+    task: str,
+    plan: RunPlan,
+    collected: list[CollectedSource],
+    entities: list[ExtractedEntity],
+    events: list[ExtractedEvent],
+) -> list[Finding]:
     base = [
         Finding(
             title="Agent-native execution model",
@@ -86,7 +91,29 @@ def generate_findings(task: str, plan: RunPlan, collected: list[CollectedSource]
                 ),
                 confidence="high",
             )
-        )
+            )
+        if entities:
+            base.append(
+                Finding(
+                    title="Structured entities extracted",
+                    detail=(
+                        f"The run extracted {len(entities)} entity records "
+                        f"across organizations, dates, and amounts."
+                    ),
+                    confidence="high",
+                )
+            )
+        if events:
+            base.append(
+                Finding(
+                    title="Structured events extracted",
+                    detail=(
+                        f"The run extracted {len(events)} event candidates that can be exported "
+                        "to CSV for downstream analysis."
+                    ),
+                    confidence="high",
+                )
+            )
         first = collected[0].record
         if first.excerpt:
             base.append(

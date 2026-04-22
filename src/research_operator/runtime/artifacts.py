@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import csv
 import json
 from pathlib import Path
 
@@ -19,6 +20,10 @@ def write_artifacts(result: RunResult, base_dir: Path) -> RunResult:
     findings_path = run_dir / "findings.json"
     html_report_path = run_dir / "research_report.html"
     source_ledger_path = run_dir / "source_ledger.json"
+    entities_path = run_dir / "entities.json"
+    entities_csv_path = run_dir / "entities.csv"
+    events_path = run_dir / "events.json"
+    events_csv_path = run_dir / "events.csv"
 
     result.artifacts = RunArtifacts(
         manifest_path=manifest_path,
@@ -26,6 +31,10 @@ def write_artifacts(result: RunResult, base_dir: Path) -> RunResult:
         findings_path=findings_path,
         html_report_path=html_report_path,
         source_ledger_path=source_ledger_path,
+        entities_path=entities_path,
+        entities_csv_path=entities_csv_path,
+        events_path=events_path,
+        events_csv_path=events_csv_path,
     )
 
     manifest_path.write_text(
@@ -41,6 +50,43 @@ def write_artifacts(result: RunResult, base_dir: Path) -> RunResult:
     source_ledger_path.write_text(
         json.dumps([item.model_dump(mode="json") for item in result.sources], indent=2, ensure_ascii=False),
         encoding="utf-8",
+    )
+    entities_path.write_text(
+        json.dumps([item.model_dump(mode="json") for item in result.entities], indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    events_path.write_text(
+        json.dumps([item.model_dump(mode="json") for item in result.events], indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    write_csv(
+        entities_csv_path,
+        ["entity", "category", "source_label", "source_locator"],
+        [
+            {
+                "entity": item.entity,
+                "category": item.category,
+                "source_label": item.source_label,
+                "source_locator": item.source_locator,
+            }
+            for item in result.entities
+        ],
+    )
+    write_csv(
+        events_csv_path,
+        ["event_type", "subject", "amount", "event_date", "source_label", "source_locator", "evidence"],
+        [
+            {
+                "event_type": item.event_type,
+                "subject": item.subject,
+                "amount": item.amount,
+                "event_date": item.event_date,
+                "source_label": item.source_label,
+                "source_locator": item.source_locator,
+                "evidence": item.evidence,
+            }
+            for item in result.events
+        ],
     )
     return result
 
@@ -69,6 +115,12 @@ def render_markdown_report(result: RunResult) -> str:
             lines.append(f"- `{source.kind}` {source.label}: {source.locator}")
     else:
         lines.append("- No explicit sources attached to this run.")
+
+    lines.extend(["", "## Structured Outputs", ""])
+    lines.append(f"- Entities: `{result.artifacts.entities_path}`")
+    lines.append(f"- Entities CSV: `{result.artifacts.entities_csv_path}`")
+    lines.append(f"- Events: `{result.artifacts.events_path}`")
+    lines.append(f"- Events CSV: `{result.artifacts.events_csv_path}`")
 
     return "\n".join(lines) + "\n"
 
@@ -139,6 +191,16 @@ def render_html_report(result: RunResult) -> str:
           <ul>{findings}</ul>
         </article>
       </section>
+      <section class="grid">
+        <article class="card">
+          <h2>Entities</h2>
+          <p>{len(result.entities)} extracted</p>
+        </article>
+        <article class="card">
+          <h2>Events</h2>
+          <p>{len(result.events)} extracted</p>
+        </article>
+      </section>
       <section class="card" style="margin-top: 24px;">
         <h2>Sources</h2>
         <ul>{sources}</ul>
@@ -156,3 +218,11 @@ def escape_html(value: str) -> str:
         .replace(">", "&gt;")
         .replace('"', "&quot;")
     )
+
+
+def write_csv(path: Path, fieldnames: list[str], rows: list[dict[str, str]]) -> None:
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in rows:
+            writer.writerow(row)

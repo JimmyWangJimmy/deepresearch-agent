@@ -12,7 +12,7 @@ runner = CliRunner()
 
 def test_run_creates_artifacts(tmp_path):
     source_file = tmp_path / "input.txt"
-    source_file.write_text("机器人行业融资升温，自动化和具身智能成为焦点。", encoding="utf-8")
+    source_file.write_text("2026年4月20日，星海机器人公司完成2亿元人民币融资，远望资本领投。", encoding="utf-8")
     result = runner.invoke(
         app,
         [
@@ -34,7 +34,13 @@ def test_run_creates_artifacts(tmp_path):
     assert (tmp_path / run_id / "research_report.html").exists()
     assert (tmp_path / run_id / "findings.json").exists()
     assert (tmp_path / run_id / "source_ledger.json").exists()
+    assert (tmp_path / run_id / "entities.json").exists()
+    assert (tmp_path / run_id / "entities.csv").exists()
+    assert (tmp_path / run_id / "events.json").exists()
+    assert (tmp_path / run_id / "events.csv").exists()
     assert payload["sources"][0]["label"] == "input.txt"
+    assert payload["entities"]
+    assert payload["events"]
 
 
 def test_inspect_reads_manifest(tmp_path):
@@ -96,6 +102,42 @@ def test_export_copies_html_artifact(tmp_path):
     assert export_result.exit_code == 0
     assert export_target.exists()
     assert "<!doctype html>" in export_target.read_text(encoding="utf-8").lower()
+
+
+def test_export_copies_events_csv(tmp_path):
+    source_file = tmp_path / "events.txt"
+    source_file.write_text("2026年4月20日，星海机器人公司完成2亿元人民币融资。", encoding="utf-8")
+    run_result = runner.invoke(
+        app,
+        [
+            "run",
+            "输出事件结构化表",
+            "--file",
+            str(source_file),
+            "--artifacts-dir",
+            str(tmp_path),
+            "--json",
+        ],
+    )
+    assert run_result.exit_code == 0
+    payload = json.loads(run_result.stdout)
+
+    export_target = tmp_path / "exports" / "events.csv"
+    export_result = runner.invoke(
+        app,
+        [
+            "export",
+            payload["run_id"],
+            "--format",
+            "events_csv",
+            "--artifacts-dir",
+            str(tmp_path),
+            "--output",
+            str(export_target),
+        ],
+    )
+    assert export_result.exit_code == 0
+    assert "event_type" in export_target.read_text(encoding="utf-8")
 
 
 def test_runs_lists_history(tmp_path):
@@ -215,3 +257,58 @@ def test_providers_lists_available_backends():
     payload = json.loads(result.stdout)
     assert "attached" in payload
     assert "web_fetch" in payload
+
+
+def test_watch_run_all_executes_multiple_specs(tmp_path):
+    first_file = tmp_path / "first.txt"
+    second_file = tmp_path / "second.txt"
+    first_file.write_text("2026年4月，甲公司完成融资。", encoding="utf-8")
+    second_file.write_text("2026年4月，乙公司发布新产品。", encoding="utf-8")
+
+    first_create = runner.invoke(
+        app,
+        [
+            "watch",
+            "create",
+            "Watch A",
+            "--task",
+            "监控甲公司",
+            "--file",
+            str(first_file),
+            "--watches-dir",
+            str(tmp_path / "watches"),
+        ],
+    )
+    second_create = runner.invoke(
+        app,
+        [
+            "watch",
+            "create",
+            "Watch B",
+            "--task",
+            "监控乙公司",
+            "--file",
+            str(second_file),
+            "--watches-dir",
+            str(tmp_path / "watches"),
+        ],
+    )
+    assert first_create.exit_code == 0
+    assert second_create.exit_code == 0
+
+    result = runner.invoke(
+        app,
+        [
+            "watch",
+            "run-all",
+            "--watches-dir",
+            str(tmp_path / "watches"),
+            "--artifacts-dir",
+            str(tmp_path / "artifacts"),
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert len(payload) == 2
+    assert all(item["new_run_id"] for item in payload)

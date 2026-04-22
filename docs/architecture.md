@@ -73,6 +73,8 @@ Current repository covers:
 - Run manifest generation
 - Markdown and JSON artifacts
 - HTML report export
+- Structured entity and event extraction
+- CSV exports for entities and events
 - Watch definitions and change detection digests
 - Inspect command
 
@@ -83,3 +85,4 @@ The next implementation increments should add:
 3. Source ledger with citations
 4. XLSX exports
 5. Multi-step analytical extraction
+6. External research-provider adapters

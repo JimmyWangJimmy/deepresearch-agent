@@ -5,6 +5,7 @@ from pathlib import Path
 from research_operator.schemas import RunResult
 from research_operator.runtime.analyzer import generate_findings
 from research_operator.runtime.artifacts import write_artifacts
+from research_operator.runtime.extraction import extract_entities, extract_events
 from research_operator.runtime.planner import build_plan
 from research_operator.runtime.providers import collect_sources
 
@@ -17,11 +18,15 @@ def execute_task(
 ) -> RunResult:
     plan = build_plan(task)
     collected = collect_sources(urls=urls, files=files)
-    findings = generate_findings(task, plan, collected)
+    entities = extract_entities(collected)
+    events = extract_events(collected)
+    findings = generate_findings(task, plan, collected, entities, events)
     result = RunResult(
         task=task,
         plan=plan,
         findings=findings,
+        entities=entities,
+        events=events,
         sources=[item.record for item in collected],
         outputs=[output for output in result_outputs()],
     )

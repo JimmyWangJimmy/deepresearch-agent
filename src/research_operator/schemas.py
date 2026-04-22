@@ -55,6 +55,23 @@ class Finding(BaseModel):
     confidence: str = "medium"
 
 
+class ExtractedEntity(BaseModel):
+    entity: str
+    category: str
+    source_label: str
+    source_locator: str
+
+
+class ExtractedEvent(BaseModel):
+    event_type: str
+    subject: str
+    amount: str = ""
+    event_date: str = ""
+    source_label: str
+    source_locator: str
+    evidence: str = ""
+
+
 class SourceRecord(BaseModel):
     label: str
     kind: str
@@ -75,6 +92,10 @@ class RunArtifacts(BaseModel):
     findings_path: Path
     html_report_path: Path
     source_ledger_path: Path
+    entities_path: Path
+    entities_csv_path: Path
+    events_path: Path
+    events_csv_path: Path
 
 
 class RunResult(BaseModel):
@@ -83,6 +104,8 @@ class RunResult(BaseModel):
     task: str
     plan: RunPlan
     findings: list[Finding]
+    entities: list[ExtractedEntity] = Field(default_factory=list)
+    events: list[ExtractedEvent] = Field(default_factory=list)
     sources: list[SourceRecord] = Field(default_factory=list)
     outputs: list[OutputFormat] = Field(
         default_factory=lambda: [OutputFormat.MARKDOWN, OutputFormat.JSON]

@@ -12,9 +12,12 @@ Goal: deliver a CLI-first research operator that proves the artifact contract.
 - findings artifact
 - html artifact
 - source ledger
+- entities and events artifacts
+- CSV exports
 - deterministic planning
 - watch definitions
 - watch execution digest
+- watch run-all
 
 ## V1.5
 

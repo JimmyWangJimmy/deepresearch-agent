@@ -68,6 +68,13 @@ The run should produce:
 - `entities.csv`
 - `events.csv`
 
+For a packaged local demo, run:
+
+```bash
+bash scripts/run_demo.sh
+open demo/index.html
+```
+
 ## 4. Run A Provider Demo
 
 Offline/public-source demo:

@@ -4,6 +4,9 @@ __pycache__/
 *.pyc
 artifacts/
 artifacts_demo/
+artifacts_provider_demo/
+artifacts_provider_demo2/
+artifacts_provider_demo3/
 demo/
 .dra_sched/
 .dra_test/

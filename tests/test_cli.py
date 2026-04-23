@@ -498,6 +498,23 @@ def test_watch_create_and_run_detects_changes(tmp_path):
     assert notification_payload["deliverables"]["source_score_chart"].endswith("source_scores.svg")
     assert notification_payload["deliverables"]["event_timeline_chart"].endswith("event_timeline.svg")
 
+    inspected = runner.invoke(
+        app,
+        [
+            "watch",
+            "inspect",
+            created["watch_id"],
+            "--watches-dir",
+            str(tmp_path / "watches"),
+        ],
+    )
+    assert inspected.exit_code == 0
+    inspect_payload = json.loads(inspected.stdout)
+    assert inspect_payload["watch"]["watch_id"] == created["watch_id"]
+    assert inspect_payload["last_execution"]["new_run_id"] == third_payload["new_run_id"]
+    assert inspect_payload["notification"]["deliverables"]["delivery_bundle"].endswith("delivery_bundle.zip")
+    assert "Changed Sources" in inspect_payload["digest"]
+
 
 def test_providers_lists_available_backends():
     result = runner.invoke(app, ["providers", "--json"])

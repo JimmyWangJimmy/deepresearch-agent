@@ -53,6 +53,29 @@ def list_watches(watches_dir: Path | None = None) -> list[WatchSpec]:
     return specs
 
 
+def inspect_watch(watch_id: str, watches_dir: Path | None = None) -> dict:
+    watch_dir = ensure_watches_dir(watches_dir) / watch_id
+    spec = load_watch(watch_id, watches_dir)
+    execution_path = watch_dir / "last_execution.json"
+    notification_path = watch_dir / "notification.json"
+    digest_path = watch_dir / "last_digest.md"
+    state_path = watch_dir / "state.json"
+    return {
+        "watch": spec.model_dump(mode="json"),
+        "paths": {
+            "watch_dir": str(watch_dir),
+            "last_execution": str(execution_path),
+            "notification": str(notification_path),
+            "digest": str(digest_path),
+            "state": str(state_path),
+        },
+        "last_execution": load_optional_json(execution_path),
+        "notification": load_optional_json(notification_path),
+        "digest": digest_path.read_text(encoding="utf-8") if digest_path.exists() else "",
+        "state": load_watch_state(state_path),
+    }
+
+
 def execute_watch(
     watch_id: str,
     artifacts_dir: Path,
@@ -137,6 +160,12 @@ def load_watch_state(state_path: Path) -> dict[str, str]:
         return {}
     payload = json.loads(state_path.read_text(encoding="utf-8"))
     return {str(key): str(value) for key, value in payload.items()}
+
+
+def load_optional_json(path: Path) -> dict:
+    if not path.exists():
+        return {}
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def build_watch_sources(urls: list[str] | None = None, files: list[Path] | None = None) -> list[WatchSource]:

@@ -96,6 +96,7 @@ class RunArtifacts(BaseModel):
     manifest_path: Path
     report_path: Path
     findings_path: Path
+    quality_path: Path
     html_report_path: Path
     pdf_report_path: Path
     workbook_path: Path
@@ -122,6 +123,16 @@ class RunResult(BaseModel):
         default_factory=lambda: [OutputFormat.MARKDOWN, OutputFormat.JSON, OutputFormat.HTML, OutputFormat.PDF, OutputFormat.XLSX]
     )
     artifacts: RunArtifacts | None = None
+
+
+class RunQuality(BaseModel):
+    score: float
+    source_count: int
+    average_evidence_score: float
+    entity_count: int
+    event_count: int
+    deliverable_count: int
+    warnings: list[str] = Field(default_factory=list)
 
 
 class WatchSource(BaseModel):

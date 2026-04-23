@@ -10,7 +10,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.pdfgen import canvas
 
-from research_operator.schemas import RunArtifacts, RunResult
+from research_operator.schemas import RunArtifacts, RunQuality, RunResult
 
 
 def ensure_run_dir(base_dir: Path, run_id: str) -> Path:
@@ -24,6 +24,7 @@ def write_artifacts(result: RunResult, base_dir: Path) -> RunResult:
     manifest_path = run_dir / "run_manifest.json"
     report_path = run_dir / "research_report.md"
     findings_path = run_dir / "findings.json"
+    quality_path = run_dir / "quality.json"
     html_report_path = run_dir / "research_report.html"
     pdf_report_path = run_dir / "research_report.pdf"
     workbook_path = run_dir / "research_workbook.xlsx"
@@ -40,6 +41,7 @@ def write_artifacts(result: RunResult, base_dir: Path) -> RunResult:
         manifest_path=manifest_path,
         report_path=report_path,
         findings_path=findings_path,
+        quality_path=quality_path,
         html_report_path=html_report_path,
         pdf_report_path=pdf_report_path,
         workbook_path=workbook_path,
@@ -62,6 +64,10 @@ def write_artifacts(result: RunResult, base_dir: Path) -> RunResult:
     write_pdf_report(result, pdf_report_path)
     findings_path.write_text(
         json.dumps([item.model_dump(mode="json") for item in result.findings], indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    quality_path.write_text(
+        json.dumps(calculate_run_quality(result).model_dump(mode="json"), indent=2, ensure_ascii=False),
         encoding="utf-8",
     )
     source_ledger_path.write_text(
@@ -161,6 +167,7 @@ def render_markdown_report(result: RunResult) -> str:
     lines.append(f"- Entities CSV: `{result.artifacts.entities_csv_path}`")
     lines.append(f"- Events: `{result.artifacts.events_path}`")
     lines.append(f"- Events CSV: `{result.artifacts.events_csv_path}`")
+    lines.append(f"- Quality: `{result.artifacts.quality_path}`")
     lines.append(f"- Workbook: `{result.artifacts.workbook_path}`")
     lines.append(f"- PDF Report: `{result.artifacts.pdf_report_path}`")
     lines.append(f"- Delivery Bundle: `{result.artifacts.bundle_path}`")
@@ -373,6 +380,7 @@ def write_delivery_bundle(result: RunResult, path: Path) -> None:
         result.artifacts.html_report_path,
         result.artifacts.pdf_report_path,
         result.artifacts.findings_path,
+        result.artifacts.quality_path,
         result.artifacts.workbook_path,
         result.artifacts.chart_path,
         result.artifacts.timeline_chart_path,
@@ -459,6 +467,66 @@ def write_pdf_report(result: RunResult, path: Path) -> None:
     write_wrapped(f"- Timeline Chart: {result.artifacts.timeline_chart_path}")
 
     pdf.save()
+
+
+def calculate_run_quality(result: RunResult) -> RunQuality:
+    source_count = len(result.sources)
+    average_evidence_score = (
+        round(sum(item.evidence_score for item in result.sources) / source_count, 3)
+        if source_count
+        else 0.0
+    )
+    deliverable_count = len([path for path in deliverable_paths(result) if path.exists()])
+    warnings: list[str] = []
+    if source_count < 2:
+        warnings.append("source_diversity_low")
+    if not result.events:
+        warnings.append("no_structured_events")
+    if average_evidence_score < 0.75:
+        warnings.append("evidence_score_low")
+    score = min(
+        1.0,
+        round(
+            0.2
+            + min(source_count, 4) * 0.12
+            + min(len(result.entities), 8) * 0.035
+            + min(len(result.events), 5) * 0.06
+            + min(deliverable_count, 12) * 0.015
+            + min(average_evidence_score, 2.0) * 0.1,
+            3,
+        ),
+    )
+    return RunQuality(
+        score=score,
+        source_count=source_count,
+        average_evidence_score=average_evidence_score,
+        entity_count=len(result.entities),
+        event_count=len(result.events),
+        deliverable_count=deliverable_count,
+        warnings=warnings,
+    )
+
+
+def deliverable_paths(result: RunResult) -> list[Path]:
+    if result.artifacts is None:
+        return []
+    return [
+        result.artifacts.manifest_path,
+        result.artifacts.report_path,
+        result.artifacts.findings_path,
+        result.artifacts.quality_path,
+        result.artifacts.html_report_path,
+        result.artifacts.pdf_report_path,
+        result.artifacts.workbook_path,
+        result.artifacts.bundle_path,
+        result.artifacts.chart_path,
+        result.artifacts.timeline_chart_path,
+        result.artifacts.source_ledger_path,
+        result.artifacts.entities_path,
+        result.artifacts.entities_csv_path,
+        result.artifacts.events_path,
+        result.artifacts.events_csv_path,
+    ]
 
 
 def render_source_score_chart(result: RunResult) -> str:

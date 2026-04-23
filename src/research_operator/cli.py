@@ -86,6 +86,7 @@ def run(
     summary.add_column("Value")
     summary.add_row("Run ID", result.run_id)
     summary.add_row("Task Type", result.plan.task_type.value)
+    summary.add_row("Quality", str(result.artifacts.quality_path))
     summary.add_row("Report", str(result.artifacts.report_path))
     summary.add_row("HTML", str(result.artifacts.html_report_path))
     summary.add_row("PDF", str(result.artifacts.pdf_report_path))
@@ -183,6 +184,7 @@ def export(
         "markdown": run_dir / "research_report.md",
         "manifest": run_dir / "run_manifest.json",
         "findings": run_dir / "findings.json",
+        "quality": run_dir / "quality.json",
         "xlsx": run_dir / "research_workbook.xlsx",
         "chart": run_dir / "source_scores.svg",
         "timeline_chart": run_dir / "event_timeline.svg",

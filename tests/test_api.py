@@ -49,6 +49,7 @@ def test_create_and_fetch_run_via_api(tmp_path):
     deliverables = client.get(f"/runs/{run_id}/deliverables", params={"artifacts_dir": str(tmp_path)})
     assert deliverables.status_code == 200
     delivery_payload = deliverables.json()
+    assert delivery_payload["deliverables"]["quality"]["exists"]
     assert delivery_payload["deliverables"]["pdf_report"]["exists"]
     assert delivery_payload["deliverables"]["delivery_bundle"]["exists"]
     assert delivery_payload["deliverables"]["source_score_chart"]["size_bytes"] > 0

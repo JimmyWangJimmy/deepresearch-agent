@@ -95,6 +95,7 @@ Every run must produce:
 - A source ledger
 - A human-readable report
 - Machine-readable JSON
+- A machine-readable quality summary
 - Structured entities and events
 - CSV tables for downstream analysis
 

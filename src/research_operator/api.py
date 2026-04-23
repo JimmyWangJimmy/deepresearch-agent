@@ -117,6 +117,7 @@ def require_run_dir(run_id: str, artifacts_dir: str) -> Path:
 def artifact_mapping(run_dir: Path) -> dict[str, Path]:
     return {
         "manifest": run_dir / "run_manifest.json",
+        "quality": run_dir / "quality.json",
         "markdown_report": run_dir / "research_report.md",
         "html_report": run_dir / "research_report.html",
         "pdf_report": run_dir / "research_report.pdf",

@@ -59,3 +59,17 @@ def test_create_and_fetch_run_via_api(tmp_path):
     )
     assert bundle.status_code == 200
     assert bundle.content.startswith(b"PK")
+
+
+def test_api_reports_provider_configuration_errors(tmp_path, monkeypatch):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    response = client.post(
+        "/runs",
+        json={
+            "task": "robotics funding",
+            "provider": "openai_web_research",
+            "artifacts_dir": str(tmp_path),
+        },
+    )
+    assert response.status_code == 400
+    assert "OPENAI_API_KEY is required" in response.json()["detail"]

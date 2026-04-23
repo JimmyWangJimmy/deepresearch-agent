@@ -18,7 +18,7 @@ from research_operator.runtime.monitoring import (
     list_watches,
     save_watch,
 )
-from research_operator.runtime.provider_registry import ProviderRegistry
+from research_operator.runtime.provider_registry import ProviderConfigurationError, ProviderRegistry
 from research_operator.runtime.release_gate import run_release_gate
 from research_operator.schemas import ProviderKind, WatchSpec
 
@@ -62,13 +62,16 @@ def run(
         help="Print the final run result as JSON.",
     ),
 ) -> None:
-    result = execute_task(
-        task,
-        artifacts_dir,
-        urls=url,
-        files=file,
-        query_provider=provider,
-    )
+    try:
+        result = execute_task(
+            task,
+            artifacts_dir,
+            urls=url,
+            files=file,
+            query_provider=provider,
+        )
+    except ProviderConfigurationError as exc:
+        raise typer.BadParameter(str(exc)) from exc
 
     if json_output:
         typer.echo(json.dumps(result.model_dump(mode="json"), indent=2, ensure_ascii=False))

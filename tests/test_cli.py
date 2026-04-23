@@ -748,6 +748,24 @@ def test_openai_web_research_provider_uses_responses_api(monkeypatch):
     assert "星海机器人公司" in collected[0].content
 
 
+def test_openai_web_research_provider_reports_missing_key(monkeypatch, tmp_path):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    result = runner.invoke(
+        app,
+        [
+            "run",
+            "robotics funding",
+            "--provider",
+            "openai_web_research",
+            "--artifacts-dir",
+            str(tmp_path),
+            "--json",
+        ],
+    )
+    assert result.exit_code != 0
+    assert "OPENAI_API_KEY is required" in result.output
+
+
 def test_wikipedia_title_ranking_prefers_reference_results():
     from research_operator.runtime.provider_registry import rank_titles
 

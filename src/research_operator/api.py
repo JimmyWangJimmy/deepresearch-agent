@@ -8,7 +8,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from research_operator.runtime.engine import execute_task
-from research_operator.runtime.provider_registry import ProviderRegistry
+from research_operator.runtime.provider_registry import ProviderConfigurationError, ProviderRegistry
 from research_operator.runtime.release_gate import run_release_gate
 from research_operator.schemas import ProviderKind
 
@@ -36,13 +36,16 @@ def providers() -> dict[str, list[str]]:
 
 @app.post("/runs")
 def create_run(request: RunRequest) -> dict:
-    result = execute_task(
-        request.task,
-        Path(request.artifacts_dir),
-        urls=request.urls,
-        files=[Path(item) for item in request.files],
-        query_provider=request.provider,
-    )
+    try:
+        result = execute_task(
+            request.task,
+            Path(request.artifacts_dir),
+            urls=request.urls,
+            files=[Path(item) for item in request.files],
+            query_provider=request.provider,
+        )
+    except ProviderConfigurationError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     return result.model_dump(mode="json")
 
 

@@ -11,6 +11,10 @@ from research_operator.schemas import CollectedSource, ProviderKind, SourceRecor
 from research_operator.runtime.source_io import fetch_json, fetch_url_text, fetch_xml, make_excerpt, read_file_text
 
 
+class ProviderConfigurationError(RuntimeError):
+    pass
+
+
 class ProviderAdapter(ABC):
     kind: ProviderKind
 
@@ -187,7 +191,7 @@ class OpenAIWebResearchProvider(ProviderAdapter):
     def collect_query(self, query: str) -> list[CollectedSource]:
         api_key = os.environ.get("OPENAI_API_KEY")
         if not api_key:
-            raise RuntimeError("OPENAI_API_KEY is required for openai_web_research provider")
+            raise ProviderConfigurationError("OPENAI_API_KEY is required for openai_web_research provider")
         model = os.environ.get("OPENAI_RESEARCH_MODEL", "gpt-5.2")
         payload = {
             "model": model,

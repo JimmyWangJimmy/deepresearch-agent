@@ -67,6 +67,14 @@ dra watch run-all
 
 Artifacts are written to `./artifacts/<run_id>/`.
 
+## API service
+
+```bash
+uv run uvicorn research_operator.api:app --host 0.0.0.0 --port 8000
+docker build -t deepresearch-agent .
+docker run --rm -p 8000:8000 -e OPENAI_API_KEY=$OPENAI_API_KEY deepresearch-agent
+```
+
 ## Planned product layers
 
 1. `Provider layer`

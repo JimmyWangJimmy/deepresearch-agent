@@ -8,9 +8,10 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from research_operator.runtime.engine import execute_task
+from research_operator.runtime.monitoring import build_watch_sources, execute_watch, inspect_watch, list_watches, save_watch
 from research_operator.runtime.provider_registry import ProviderConfigurationError, ProviderRegistry
 from research_operator.runtime.release_gate import run_release_gate
-from research_operator.schemas import ProviderKind
+from research_operator.schemas import ProviderKind, WatchSpec
 
 
 app = FastAPI(title="DeepResearch Agent API", version="0.1.0")
@@ -22,6 +23,22 @@ class RunRequest(BaseModel):
     urls: list[str] = Field(default_factory=list)
     files: list[str] = Field(default_factory=list)
     artifacts_dir: str = "artifacts"
+
+
+class WatchRequest(BaseModel):
+    name: str
+    task: str
+    urls: list[str] = Field(default_factory=list)
+    files: list[str] = Field(default_factory=list)
+    interval_minutes: int = 60
+    webhook_url: str | None = None
+    watches_dir: str = ".dra/watches"
+
+
+class WatchRunRequest(BaseModel):
+    artifacts_dir: str = "artifacts"
+    watches_dir: str = ".dra/watches"
+    force: bool = False
 
 
 @app.get("/health")
@@ -98,6 +115,46 @@ def download_run_deliverable(run_id: str, artifact_name: str, artifacts_dir: str
     if not path.exists():
         raise HTTPException(status_code=404, detail=f"Deliverable not found: {artifact_name}")
     return FileResponse(path, filename=path.name)
+
+
+@app.post("/watches")
+def create_watch(request: WatchRequest) -> dict:
+    sources = build_watch_sources(
+        urls=request.urls,
+        files=[Path(item) for item in request.files],
+    )
+    if not sources:
+        raise HTTPException(status_code=400, detail="At least one url or file source is required.")
+    spec = WatchSpec(
+        name=request.name,
+        task=request.task,
+        sources=sources,
+        interval_minutes=request.interval_minutes,
+        webhook_url=request.webhook_url,
+    )
+    save_watch(spec, Path(request.watches_dir))
+    return spec.model_dump(mode="json")
+
+
+@app.get("/watches")
+def get_watches(watches_dir: str = ".dra/watches") -> dict[str, list[dict]]:
+    return {"watches": [item.model_dump(mode="json") for item in list_watches(Path(watches_dir))]}
+
+
+@app.get("/watches/{watch_id}")
+def get_watch(watch_id: str, watches_dir: str = ".dra/watches") -> dict:
+    return inspect_watch(watch_id, Path(watches_dir))
+
+
+@app.post("/watches/{watch_id}/run")
+def run_watch(watch_id: str, request: WatchRunRequest) -> dict:
+    execution = execute_watch(
+        watch_id,
+        artifacts_dir=Path(request.artifacts_dir),
+        watches_dir=Path(request.watches_dir),
+        force=request.force,
+    )
+    return execution.model_dump(mode="json")
 
 
 @app.get("/gate")

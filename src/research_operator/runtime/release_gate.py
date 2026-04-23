@@ -133,7 +133,7 @@ def check_query_provider_diversity() -> GateCheck:
 def check_api_surface(repo_root: Path) -> GateCheck:
     api_path = repo_root / "src" / "research_operator" / "api.py"
     text = api_path.read_text(encoding="utf-8") if api_path.exists() else ""
-    required_tokens = ["/runs/{run_id}/deliverables", "/runs/{run_id}/quality"]
+    required_tokens = ["/runs/{run_id}/deliverables", "/runs/{run_id}/quality", "/watches/{watch_id}"]
     missing = [token for token in required_tokens if token not in text]
     passed = api_path.exists() and not missing
     detail = "api surface present" if passed else f"missing API surface: {', '.join(missing)}"

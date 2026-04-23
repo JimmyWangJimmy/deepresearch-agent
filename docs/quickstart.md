@@ -132,6 +132,30 @@ curl -o demo/api_delivery_bundle.zip \
   "http://localhost:8000/runs/$RUN_ID/deliverables/delivery_bundle?artifacts_dir=demo/api-artifacts"
 ```
 
+Create and run a watch through the API:
+
+```bash
+curl -X POST http://localhost:8000/watches \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "name": "API Watch",
+    "task": "监控机器人赛道变化",
+    "files": ["demo/funding.txt"],
+    "watches_dir": "demo/api-watches"
+  }'
+
+WATCH_ID=<paste_watch_id>
+curl -X POST "http://localhost:8000/watches/$WATCH_ID/run" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "artifacts_dir": "demo/api-watch-artifacts",
+    "watches_dir": "demo/api-watches",
+    "force": true
+  }'
+
+curl "http://localhost:8000/watches/$WATCH_ID?watches_dir=demo/api-watches"
+```
+
 ## 6. Run With Docker
 
 ```bash

@@ -79,3 +79,45 @@ def test_api_reports_provider_configuration_errors(tmp_path, monkeypatch):
     )
     assert response.status_code == 400
     assert "OPENAI_API_KEY is required" in response.json()["detail"]
+
+
+def test_watch_lifecycle_via_api(tmp_path):
+    watch_file = tmp_path / "watch.txt"
+    watch_file.write_text("版本一，新增融资披露", encoding="utf-8")
+    watches_dir = tmp_path / "watches"
+    artifacts_dir = tmp_path / "artifacts"
+
+    created = client.post(
+        "/watches",
+        json={
+            "name": "API Watch",
+            "task": "监控 API watch",
+            "files": [str(watch_file)],
+            "interval_minutes": 15,
+            "watches_dir": str(watches_dir),
+        },
+    )
+    assert created.status_code == 200
+    watch_id = created.json()["watch_id"]
+
+    listed = client.get("/watches", params={"watches_dir": str(watches_dir)})
+    assert listed.status_code == 200
+    assert listed.json()["watches"][0]["watch_id"] == watch_id
+
+    executed = client.post(
+        f"/watches/{watch_id}/run",
+        json={
+            "artifacts_dir": str(artifacts_dir),
+            "watches_dir": str(watches_dir),
+            "force": True,
+        },
+    )
+    assert executed.status_code == 200
+    assert executed.json()["new_run_id"]
+
+    inspected = client.get(f"/watches/{watch_id}", params={"watches_dir": str(watches_dir)})
+    assert inspected.status_code == 200
+    payload = inspected.json()
+    assert payload["watch"]["watch_id"] == watch_id
+    assert payload["last_execution"]["new_run_id"] == executed.json()["new_run_id"]
+    assert payload["notification"]["deliverables"]["delivery_bundle"].endswith("delivery_bundle.zip")

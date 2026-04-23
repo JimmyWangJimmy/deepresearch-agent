@@ -48,7 +48,10 @@ def test_acceptance_research_deliverable(tmp_path, monkeypatch):
     run_dir = tmp_path / payload["run_id"]
     assert (run_dir / "research_report.md").exists()
     assert (run_dir / "research_report.html").exists()
+    assert (run_dir / "research_report.pdf").exists()
     assert (run_dir / "research_workbook.xlsx").exists()
+    assert (run_dir / "source_scores.svg").exists()
+    assert (run_dir / "event_timeline.svg").exists()
     report = (run_dir / "research_report.md").read_text(encoding="utf-8")
     assert "## Executive Summary" in report
     assert "## Key Evidence" in report
@@ -93,3 +96,6 @@ def test_acceptance_monitoring_deliverable(tmp_path):
     watch_dir = tmp_path / "watches" / watch_id
     assert (watch_dir / "last_digest.md").exists()
     assert (watch_dir / "notification.txt").exists()
+    notification = json.loads((watch_dir / "notification.json").read_text(encoding="utf-8"))
+    assert notification["deliverables"]["pdf_report"].endswith("research_report.pdf")
+    assert notification["deliverables"]["event_timeline_chart"].endswith("event_timeline.svg")

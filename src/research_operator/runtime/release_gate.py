@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -38,12 +39,18 @@ def run_release_gate(repo_root: Path) -> GateReport:
 
 
 def check_tests(repo_root: Path) -> GateCheck:
+    if os.environ.get("DRA_GATE_RUNNING") == "1":
+        return GateCheck("tests", True, "skipped nested gate test run")
+    env = os.environ.copy()
+    env["DRA_GATE_RUNNING"] = "1"
     result = subprocess.run(
         ["uv", "run", "pytest", "-q"],
         cwd=repo_root,
+        env=env,
         capture_output=True,
         text=True,
         check=False,
+        timeout=120,
     )
     passed = result.returncode == 0
     output = (result.stdout or result.stderr).strip().splitlines()
@@ -84,7 +91,15 @@ def check_watch_surface(repo_root: Path) -> GateCheck:
 def check_structured_outputs(repo_root: Path) -> GateCheck:
     artifacts_path = repo_root / "src" / "research_operator" / "runtime" / "artifacts.py"
     text = artifacts_path.read_text(encoding="utf-8")
-    required_tokens = ["entities.csv", "events.csv", "source_ledger.json", "research_report.html"]
+    required_tokens = [
+        "entities.csv",
+        "events.csv",
+        "source_ledger.json",
+        "research_report.html",
+        "research_report.pdf",
+        "source_scores.svg",
+        "event_timeline.svg",
+    ]
     missing = [token for token in required_tokens if token not in text]
     passed = not missing
     detail = "structured outputs wired" if passed else f"missing artifacts: {', '.join(missing)}"
@@ -127,8 +142,12 @@ def check_notification_surface(repo_root: Path) -> GateCheck:
         repo_root / "src" / "research_operator" / "runtime" / "notifications.py",
         repo_root / "src" / "research_operator" / "runtime" / "delivery.py",
     ]
-    passed = any(path.exists() for path in candidates)
-    detail = "notification surface present" if passed else "missing notification/delivery surface"
+    monitoring_path = repo_root / "src" / "research_operator" / "runtime" / "monitoring.py"
+    text = monitoring_path.read_text(encoding="utf-8") if monitoring_path.exists() else ""
+    required_tokens = ["build_run_deliverables", "pdf_report", "workbook", "source_score_chart", "event_timeline_chart"]
+    missing = [token for token in required_tokens if token not in text]
+    passed = any(path.exists() for path in candidates) and not missing
+    detail = "notification delivery bundle present" if passed else f"missing notification delivery fields: {', '.join(missing)}"
     return GateCheck("notification_surface", passed, detail)
 
 

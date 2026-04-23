@@ -69,6 +69,8 @@ dra watch run-all
 
 Artifacts are written to `./artifacts/<run_id>/`.
 
+For a customer-demo walkthrough, see [docs/quickstart.md](docs/quickstart.md).
+
 ## API service
 
 ```bash

@@ -57,13 +57,8 @@ def write_artifacts(result: RunResult, base_dir: Path) -> RunResult:
         events_csv_path=events_csv_path,
     )
 
-    quality = calculate_run_quality(result)
     manifest_path.write_text(
         json.dumps(result.model_dump(mode="json"), indent=2, ensure_ascii=False),
-        encoding="utf-8",
-    )
-    summary_path.write_text(
-        json.dumps(build_run_summary(result, quality).model_dump(mode="json"), indent=2, ensure_ascii=False),
         encoding="utf-8",
     )
     report_path.write_text(render_markdown_report(result), encoding="utf-8")
@@ -71,10 +66,6 @@ def write_artifacts(result: RunResult, base_dir: Path) -> RunResult:
     write_pdf_report(result, pdf_report_path)
     findings_path.write_text(
         json.dumps([item.model_dump(mode="json") for item in result.findings], indent=2, ensure_ascii=False),
-        encoding="utf-8",
-    )
-    quality_path.write_text(
-        json.dumps(quality.model_dump(mode="json"), indent=2, ensure_ascii=False),
         encoding="utf-8",
     )
     source_ledger_path.write_text(
@@ -121,6 +112,15 @@ def write_artifacts(result: RunResult, base_dir: Path) -> RunResult:
     write_workbook(result, workbook_path)
     chart_path.write_text(render_source_score_chart(result), encoding="utf-8")
     timeline_chart_path.write_text(render_event_timeline_chart(result), encoding="utf-8")
+    quality = calculate_run_quality(result)
+    quality_path.write_text(
+        json.dumps(quality.model_dump(mode="json"), indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    summary_path.write_text(
+        json.dumps(build_run_summary(result, quality).model_dump(mode="json"), indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
     write_delivery_bundle(result, bundle_path)
     return result
 

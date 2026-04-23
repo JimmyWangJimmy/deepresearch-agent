@@ -9,6 +9,7 @@ artifacts_provider_demo2/
 artifacts_provider_demo3/
 artifacts_score_demo/
 demo/
+demo_*/
 .dra_sched/
 .dra_test/
 tmp_artifacts/

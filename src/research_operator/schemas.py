@@ -94,6 +94,7 @@ class CollectedSource(BaseModel):
 
 class RunArtifacts(BaseModel):
     manifest_path: Path
+    summary_path: Path
     report_path: Path
     findings_path: Path
     quality_path: Path
@@ -133,6 +134,21 @@ class RunQuality(BaseModel):
     event_count: int
     deliverable_count: int
     warnings: list[str] = Field(default_factory=list)
+
+
+class RunSummary(BaseModel):
+    run_id: str
+    task: str
+    created_at: datetime
+    task_type: TaskType
+    source_count: int
+    finding_count: int
+    entity_count: int
+    event_count: int
+    quality_score: float
+    warnings: list[str] = Field(default_factory=list)
+    top_sources: list[str] = Field(default_factory=list)
+    primary_deliverables: dict[str, str] = Field(default_factory=dict)
 
 
 class WatchSource(BaseModel):

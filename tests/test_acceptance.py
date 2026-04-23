@@ -46,6 +46,7 @@ def test_acceptance_research_deliverable(tmp_path, monkeypatch):
     assert result.exit_code == 0
     payload = json.loads(result.stdout)
     run_dir = tmp_path / payload["run_id"]
+    assert (run_dir / "run_summary.json").exists()
     assert (run_dir / "research_report.md").exists()
     assert (run_dir / "research_report.html").exists()
     assert (run_dir / "quality.json").exists()
@@ -99,6 +100,7 @@ def test_acceptance_monitoring_deliverable(tmp_path):
     assert (watch_dir / "last_digest.md").exists()
     assert (watch_dir / "notification.txt").exists()
     notification = json.loads((watch_dir / "notification.json").read_text(encoding="utf-8"))
+    assert notification["deliverables"]["summary"].endswith("run_summary.json")
     assert notification["deliverables"]["quality"].endswith("quality.json")
     assert notification["deliverables"]["pdf_report"].endswith("research_report.pdf")
     assert notification["deliverables"]["delivery_bundle"].endswith("delivery_bundle.zip")

@@ -102,6 +102,7 @@ dra inspect <run_id>
 Every run must produce:
 
 - An execution manifest
+- A compact run summary
 - A plan
 - Findings
 - A source ledger

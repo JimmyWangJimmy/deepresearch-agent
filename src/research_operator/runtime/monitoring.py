@@ -209,6 +209,7 @@ def build_run_deliverables(result) -> dict[str, str]:
         return {}
     return {
         "manifest": str(result.artifacts.manifest_path),
+        "summary": str(result.artifacts.summary_path),
         "quality": str(result.artifacts.quality_path),
         "markdown_report": str(result.artifacts.report_path),
         "html_report": str(result.artifacts.html_report_path),

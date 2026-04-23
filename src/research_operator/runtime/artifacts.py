@@ -10,7 +10,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.pdfgen import canvas
 
-from research_operator.schemas import RunArtifacts, RunQuality, RunResult
+from research_operator.schemas import RunArtifacts, RunQuality, RunResult, RunSummary
 
 
 def ensure_run_dir(base_dir: Path, run_id: str) -> Path:
@@ -22,6 +22,7 @@ def ensure_run_dir(base_dir: Path, run_id: str) -> Path:
 def write_artifacts(result: RunResult, base_dir: Path) -> RunResult:
     run_dir = ensure_run_dir(base_dir, result.run_id)
     manifest_path = run_dir / "run_manifest.json"
+    summary_path = run_dir / "run_summary.json"
     report_path = run_dir / "research_report.md"
     findings_path = run_dir / "findings.json"
     quality_path = run_dir / "quality.json"
@@ -39,6 +40,7 @@ def write_artifacts(result: RunResult, base_dir: Path) -> RunResult:
 
     result.artifacts = RunArtifacts(
         manifest_path=manifest_path,
+        summary_path=summary_path,
         report_path=report_path,
         findings_path=findings_path,
         quality_path=quality_path,
@@ -55,8 +57,13 @@ def write_artifacts(result: RunResult, base_dir: Path) -> RunResult:
         events_csv_path=events_csv_path,
     )
 
+    quality = calculate_run_quality(result)
     manifest_path.write_text(
         json.dumps(result.model_dump(mode="json"), indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    summary_path.write_text(
+        json.dumps(build_run_summary(result, quality).model_dump(mode="json"), indent=2, ensure_ascii=False),
         encoding="utf-8",
     )
     report_path.write_text(render_markdown_report(result), encoding="utf-8")
@@ -67,7 +74,7 @@ def write_artifacts(result: RunResult, base_dir: Path) -> RunResult:
         encoding="utf-8",
     )
     quality_path.write_text(
-        json.dumps(calculate_run_quality(result).model_dump(mode="json"), indent=2, ensure_ascii=False),
+        json.dumps(quality.model_dump(mode="json"), indent=2, ensure_ascii=False),
         encoding="utf-8",
     )
     source_ledger_path.write_text(
@@ -163,6 +170,7 @@ def render_markdown_report(result: RunResult) -> str:
     lines.extend(render_limitation_lines(result))
 
     lines.extend(["", "## Structured Outputs", ""])
+    lines.append(f"- Summary: `{result.artifacts.summary_path}`")
     lines.append(f"- Entities: `{result.artifacts.entities_path}`")
     lines.append(f"- Entities CSV: `{result.artifacts.entities_csv_path}`")
     lines.append(f"- Events: `{result.artifacts.events_path}`")
@@ -376,6 +384,7 @@ def write_delivery_bundle(result: RunResult, path: Path) -> None:
         return
     members = [
         result.artifacts.manifest_path,
+        result.artifacts.summary_path,
         result.artifacts.report_path,
         result.artifacts.html_report_path,
         result.artifacts.pdf_report_path,
@@ -507,11 +516,39 @@ def calculate_run_quality(result: RunResult) -> RunQuality:
     )
 
 
+def build_run_summary(result: RunResult, quality: RunQuality) -> RunSummary:
+    if result.artifacts is None:
+        primary_deliverables: dict[str, str] = {}
+    else:
+        primary_deliverables = {
+            "bundle": str(result.artifacts.bundle_path),
+            "pdf_report": str(result.artifacts.pdf_report_path),
+            "html_report": str(result.artifacts.html_report_path),
+            "workbook": str(result.artifacts.workbook_path),
+            "quality": str(result.artifacts.quality_path),
+        }
+    return RunSummary(
+        run_id=result.run_id,
+        task=result.task,
+        created_at=result.created_at,
+        task_type=result.plan.task_type,
+        source_count=len(result.sources),
+        finding_count=len(result.findings),
+        entity_count=len(result.entities),
+        event_count=len(result.events),
+        quality_score=quality.score,
+        warnings=quality.warnings,
+        top_sources=[source.label for source in result.sources[:3]],
+        primary_deliverables=primary_deliverables,
+    )
+
+
 def deliverable_paths(result: RunResult) -> list[Path]:
     if result.artifacts is None:
         return []
     return [
         result.artifacts.manifest_path,
+        result.artifacts.summary_path,
         result.artifacts.report_path,
         result.artifacts.findings_path,
         result.artifacts.quality_path,

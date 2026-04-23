@@ -87,6 +87,7 @@ def run(
     summary.add_column("Value")
     summary.add_row("Run ID", result.run_id)
     summary.add_row("Task Type", result.plan.task_type.value)
+    summary.add_row("Summary", str(result.artifacts.summary_path))
     summary.add_row("Quality", str(result.artifacts.quality_path))
     summary.add_row("Report", str(result.artifacts.report_path))
     summary.add_row("HTML", str(result.artifacts.html_report_path))
@@ -199,6 +200,7 @@ def export(
         "bundle": run_dir / "delivery_bundle.zip",
         "markdown": run_dir / "research_report.md",
         "manifest": run_dir / "run_manifest.json",
+        "summary": run_dir / "run_summary.json",
         "findings": run_dir / "findings.json",
         "quality": run_dir / "quality.json",
         "xlsx": run_dir / "research_workbook.xlsx",

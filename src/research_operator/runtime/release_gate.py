@@ -94,6 +94,7 @@ def check_structured_outputs(repo_root: Path) -> GateCheck:
     required_tokens = [
         "entities.csv",
         "events.csv",
+        "run_summary.json",
         "quality.json",
         "source_ledger.json",
         "research_report.html",

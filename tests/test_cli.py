@@ -32,6 +32,7 @@ def test_run_creates_artifacts(tmp_path):
     payload = json.loads(result.stdout)
     run_id = payload["run_id"]
     assert (tmp_path / run_id / "run_manifest.json").exists()
+    assert (tmp_path / run_id / "run_summary.json").exists()
     assert (tmp_path / run_id / "research_report.md").exists()
     assert (tmp_path / run_id / "research_report.html").exists()
     assert (tmp_path / run_id / "research_report.pdf").exists()
@@ -53,6 +54,9 @@ def test_run_creates_artifacts(tmp_path):
     quality = json.loads((tmp_path / run_id / "quality.json").read_text(encoding="utf-8"))
     assert quality["score"] > 0
     assert quality["warnings"]
+    summary = json.loads((tmp_path / run_id / "run_summary.json").read_text(encoding="utf-8"))
+    assert summary["quality_score"] == quality["score"]
+    assert summary["primary_deliverables"]["bundle"].endswith("delivery_bundle.zip")
 
 
 def test_inspect_reads_manifest(tmp_path):
@@ -337,6 +341,7 @@ def test_export_copies_delivery_bundle(tmp_path):
     with ZipFile(export_target) as archive:
         names = set(archive.namelist())
     assert "research_report.pdf" in names
+    assert "run_summary.json" in names
     assert "quality.json" in names
     assert "research_workbook.xlsx" in names
     assert "source_scores.svg" in names
@@ -485,6 +490,7 @@ def test_watch_create_and_run_detects_changes(tmp_path):
     assert notification_json.exists()
     notification_payload = json.loads(notification_json.read_text(encoding="utf-8"))
     assert notification_payload["title"]
+    assert notification_payload["deliverables"]["summary"].endswith("run_summary.json")
     assert notification_payload["deliverables"]["quality"].endswith("quality.json")
     assert notification_payload["deliverables"]["pdf_report"].endswith("research_report.pdf")
     assert notification_payload["deliverables"]["workbook"].endswith("research_workbook.xlsx")

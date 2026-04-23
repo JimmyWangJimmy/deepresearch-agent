@@ -22,6 +22,7 @@ def write_artifacts(result: RunResult, base_dir: Path) -> RunResult:
     findings_path = run_dir / "findings.json"
     html_report_path = run_dir / "research_report.html"
     workbook_path = run_dir / "research_workbook.xlsx"
+    chart_path = run_dir / "source_scores.svg"
     source_ledger_path = run_dir / "source_ledger.json"
     entities_path = run_dir / "entities.json"
     entities_csv_path = run_dir / "entities.csv"
@@ -34,6 +35,7 @@ def write_artifacts(result: RunResult, base_dir: Path) -> RunResult:
         findings_path=findings_path,
         html_report_path=html_report_path,
         workbook_path=workbook_path,
+        chart_path=chart_path,
         source_ledger_path=source_ledger_path,
         entities_path=entities_path,
         entities_csv_path=entities_csv_path,
@@ -93,6 +95,7 @@ def write_artifacts(result: RunResult, base_dir: Path) -> RunResult:
         ],
     )
     write_workbook(result, workbook_path)
+    chart_path.write_text(render_source_score_chart(result), encoding="utf-8")
     return result
 
 
@@ -146,6 +149,7 @@ def render_markdown_report(result: RunResult) -> str:
     lines.append(f"- Events: `{result.artifacts.events_path}`")
     lines.append(f"- Events CSV: `{result.artifacts.events_csv_path}`")
     lines.append(f"- Workbook: `{result.artifacts.workbook_path}`")
+    lines.append(f"- Source Score Chart: `{result.artifacts.chart_path}`")
 
     return "\n".join(lines) + "\n"
 
@@ -248,6 +252,10 @@ def render_html_report(result: RunResult) -> str:
         <ul>{evidence}</ul>
       </section>
       <section class="card" style="margin-top: 24px;">
+        <h2>Source Score Chart</h2>
+        <img alt="Source score chart" src="source_scores.svg" style="max-width: 100%; border-radius: 12px;" />
+      </section>
+      <section class="card" style="margin-top: 24px;">
         <h2>Sources</h2>
         <ul>{sources}</ul>
       </section>
@@ -334,6 +342,42 @@ def write_workbook(result: RunResult, path: Path) -> None:
         )
 
     workbook.save(path)
+
+
+def render_source_score_chart(result: RunResult) -> str:
+    width = 720
+    bar_height = 34
+    top = 32
+    left = 180
+    right_pad = 40
+    chart_width = width - left - right_pad
+    sources = result.sources[:5]
+    height = top + max(len(sources), 1) * 52 + 32
+    max_score = max((item.evidence_score for item in sources), default=1.0) or 1.0
+
+    bars: list[str] = []
+    for index, source in enumerate(sources):
+        y = top + index * 52
+        bar_width = chart_width * (source.evidence_score / max_score)
+        bars.append(
+            f'<text x="16" y="{y + 22}" font-size="14" fill="#141312">{escape_html(source.label)}</text>'
+        )
+        bars.append(
+            f'<rect x="{left}" y="{y}" width="{bar_width:.2f}" height="{bar_height}" rx="8" fill="#0f766e" opacity="0.88"/>'
+        )
+        bars.append(
+            f'<text x="{left + bar_width + 12:.2f}" y="{y + 22}" font-size="13" fill="#665f55">{source.evidence_score:.2f}</text>'
+        )
+
+    if not sources:
+        bars.append('<text x="16" y="60" font-size="14" fill="#665f55">No sources available.</text>')
+
+    return f"""<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" role="img" aria-label="Source evidence score chart">
+  <rect width="{width}" height="{height}" fill="#fffdf8" rx="18"/>
+  <text x="16" y="22" font-size="16" font-weight="700" fill="#141312">Source Evidence Scores</text>
+  {"".join(bars)}
+</svg>
+"""
 
 
 def render_executive_summary_lines(result: RunResult) -> list[str]:

@@ -261,6 +261,11 @@ def watch_create(
         min=1,
         help="Target execution interval in minutes.",
     ),
+    webhook_url: str | None = typer.Option(
+        None,
+        "--webhook-url",
+        help="Optional webhook endpoint to receive watch notifications.",
+    ),
     url: list[str] = typer.Option(
         None,
         "--url",
@@ -286,7 +291,13 @@ def watch_create(
     if not sources:
         raise typer.BadParameter("At least one --url or --file is required.")
 
-    spec = WatchSpec(name=name, task=task, sources=sources, interval_minutes=interval_minutes)
+    spec = WatchSpec(
+        name=name,
+        task=task,
+        sources=sources,
+        interval_minutes=interval_minutes,
+        webhook_url=webhook_url,
+    )
     save_watch(spec, watches_dir)
     typer.echo(json.dumps(spec.model_dump(mode="json"), indent=2, ensure_ascii=False))
 

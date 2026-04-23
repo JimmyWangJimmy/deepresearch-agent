@@ -7,7 +7,12 @@ from pathlib import Path
 
 from research_operator.config import AppConfig
 from research_operator.runtime.engine import execute_task
-from research_operator.runtime.notifications import write_notification
+from research_operator.runtime.notifications import (
+    build_notification_payload,
+    post_webhook,
+    write_notification,
+    write_notification_json,
+)
 from research_operator.runtime.provider_registry import ProviderRegistry
 from research_operator.schemas import (
     ProviderKind,
@@ -112,11 +117,13 @@ def execute_watch(
     )
     digest_path = watch_dir / "last_digest.md"
     digest_path.write_text(render_watch_digest(spec, execution), encoding="utf-8")
-    write_notification(
-        watch_dir,
-        title=f"Watch {spec.name} execution",
-        body=render_notification_body(spec, execution),
-    )
+    notification_title = f"Watch {spec.name} execution"
+    notification_body = render_notification_body(spec, execution)
+    write_notification(watch_dir, title=notification_title, body=notification_body)
+    payload = build_notification_payload(notification_title, notification_body)
+    write_notification_json(watch_dir, payload)
+    if spec.webhook_url:
+        post_webhook(spec.webhook_url, payload)
     spec.last_run_at = execution.executed_at
     spec.next_run_at = execution.executed_at + timedelta(minutes=spec.interval_minutes)
     save_watch(spec, watches_dir)

@@ -130,6 +130,7 @@ class WatchSpec(BaseModel):
     sources: list[WatchSource]
     interval_minutes: int = 60
     enabled: bool = True
+    webhook_url: str | None = None
     last_run_at: datetime | None = None
     next_run_at: datetime | None = None
 

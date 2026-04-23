@@ -292,6 +292,9 @@ def test_watch_create_and_run_detects_changes(tmp_path):
     notification_path = tmp_path / "watches" / created["watch_id"] / "notification.txt"
     assert notification_path.exists()
     assert "new_run_id=" in notification_path.read_text(encoding="utf-8")
+    notification_json = tmp_path / "watches" / created["watch_id"] / "notification.json"
+    assert notification_json.exists()
+    assert json.loads(notification_json.read_text(encoding="utf-8"))["title"]
 
 
 def test_providers_lists_available_backends():
@@ -409,6 +412,58 @@ def test_watch_list_due_only_filters_not_due(tmp_path):
     )
     assert due_list.exit_code == 0
     assert json.loads(due_list.stdout) == []
+
+
+def test_watch_posts_webhook_when_configured(tmp_path, monkeypatch):
+    posted: dict[str, object] = {}
+
+    def fake_post_webhook(url: str, payload: dict) -> None:
+        posted["url"] = url
+        posted["payload"] = payload
+
+    monkeypatch.setattr(
+        "research_operator.runtime.monitoring.post_webhook",
+        fake_post_webhook,
+    )
+
+    watch_file = tmp_path / "webhook.txt"
+    watch_file.write_text("版本一", encoding="utf-8")
+    created = runner.invoke(
+        app,
+        [
+            "watch",
+            "create",
+            "Webhook Watch",
+            "--task",
+            "监控 webhook 通知",
+            "--interval-minutes",
+            "15",
+            "--webhook-url",
+            "https://example.com/hook",
+            "--file",
+            str(watch_file),
+            "--watches-dir",
+            str(tmp_path / "watches"),
+        ],
+    )
+    assert created.exit_code == 0
+    watch_id = json.loads(created.stdout)["watch_id"]
+
+    run_result = runner.invoke(
+        app,
+        [
+            "watch",
+            "run",
+            watch_id,
+            "--watches-dir",
+            str(tmp_path / "watches"),
+            "--artifacts-dir",
+            str(tmp_path / "artifacts"),
+        ],
+    )
+    assert run_result.exit_code == 0
+    assert posted["url"] == "https://example.com/hook"
+    assert isinstance(posted["payload"], dict)
 
 
 def test_run_uses_query_provider_when_no_sources(tmp_path, monkeypatch):

@@ -469,6 +469,7 @@ def test_providers_lists_available_backends():
     payload = json.loads(result.stdout)
     assert "attached" in payload
     assert "web_fetch" in payload
+    assert "openai_web_research" in payload
 
 
 def test_watch_run_all_executes_multiple_specs(tmp_path):
@@ -707,6 +708,44 @@ def test_run_supports_second_query_provider(tmp_path, monkeypatch):
     assert result.exit_code == 0
     payload = json.loads(result.stdout)
     assert payload["sources"][0]["provider"] == "arxiv_search"
+
+
+def test_openai_web_research_provider_uses_responses_api(monkeypatch):
+    from research_operator.runtime.provider_registry import OpenAIWebResearchProvider
+
+    class FakeResponse:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {
+                "id": "resp_test",
+                "output_text": "2026年4月20日，星海机器人公司完成2亿元人民币融资。Source: https://example.com/funding",
+            }
+
+    class FakeClient:
+        def __init__(self, timeout):
+            self.timeout = timeout
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, traceback):
+            return None
+
+        def post(self, url, headers, json):
+            assert url == "https://api.openai.com/v1/responses"
+            assert headers["Authorization"] == "Bearer test-key"
+            assert json["tools"] == [{"type": "web_search"}]
+            return FakeResponse()
+
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    monkeypatch.setattr("research_operator.runtime.provider_registry.httpx.Client", FakeClient)
+
+    collected = OpenAIWebResearchProvider().collect_query("robotics funding")
+    assert collected[0].record.provider == ProviderKind.OPENAI_WEB_RESEARCH
+    assert collected[0].record.locator == "openai:responses/resp_test"
+    assert "星海机器人公司" in collected[0].content
 
 
 def test_wikipedia_title_ranking_prefers_reference_results():

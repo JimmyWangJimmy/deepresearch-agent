@@ -37,6 +37,7 @@ class ProviderKind(str, Enum):
     WEB_FETCH = "web_fetch"
     WIKIPEDIA_SEARCH = "wikipedia_search"
     ARXIV_SEARCH = "arxiv_search"
+    OPENAI_WEB_RESEARCH = "openai_web_research"
 
 
 class PlanStep(BaseModel):

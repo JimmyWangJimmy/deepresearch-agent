@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import os
 from abc import ABC, abstractmethod
 from pathlib import Path
 from urllib.parse import quote
+
+import httpx
 
 from research_operator.schemas import CollectedSource, ProviderKind, SourceRecord
 from research_operator.runtime.source_io import fetch_json, fetch_url_text, fetch_xml, make_excerpt, read_file_text
@@ -175,6 +178,67 @@ class ArxivSearchProvider(ProviderAdapter):
         return collected
 
 
+class OpenAIWebResearchProvider(ProviderAdapter):
+    kind = ProviderKind.OPENAI_WEB_RESEARCH
+
+    def collect(self, locator: str) -> CollectedSource:
+        return self.collect_query(locator)[0]
+
+    def collect_query(self, query: str) -> list[CollectedSource]:
+        api_key = os.environ.get("OPENAI_API_KEY")
+        if not api_key:
+            raise RuntimeError("OPENAI_API_KEY is required for openai_web_research provider")
+        model = os.environ.get("OPENAI_RESEARCH_MODEL", "gpt-5.2")
+        payload = {
+            "model": model,
+            "input": (
+                "Research the following request. Return a concise evidence-backed brief with "
+                "specific facts, dates, entities, and source URLs where available.\n\n"
+                f"Request: {query}"
+            ),
+            "tools": [{"type": "web_search"}],
+            "tool_choice": "auto",
+        }
+        with httpx.Client(timeout=90.0) as client:
+            response = client.post(
+                "https://api.openai.com/v1/responses",
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                },
+                json=payload,
+            )
+            response.raise_for_status()
+        data = response.json()
+        text = extract_response_text(data)
+        response_id = str(data.get("id") or "openai_response")
+        return [
+            CollectedSource(
+                record=SourceRecord(
+                    label=f"OpenAI Web Research: {query[:60]}",
+                    kind="research_provider",
+                    locator=f"openai:responses/{response_id}",
+                    excerpt=make_excerpt(text),
+                    content_chars=len(text),
+                    provider=self.kind,
+                ),
+                content=text,
+            )
+        ]
+
+
+def extract_response_text(data: dict) -> str:
+    direct = data.get("output_text")
+    if isinstance(direct, str) and direct.strip():
+        return direct.strip()
+    parts: list[str] = []
+    for item in data.get("output", []) or []:
+        for content in item.get("content", []) or []:
+            if content.get("type") == "output_text" and isinstance(content.get("text"), str):
+                parts.append(content["text"])
+    return "\n\n".join(part.strip() for part in parts if part.strip())
+
+
 def build_query_candidates(query: str) -> list[str]:
     candidates = [query.strip()]
     lowered = query.lower()
@@ -231,6 +295,7 @@ class ProviderRegistry:
             ProviderKind.WEB_FETCH: WebFetchProvider(),
             ProviderKind.WIKIPEDIA_SEARCH: WikipediaSearchProvider(),
             ProviderKind.ARXIV_SEARCH: ArxivSearchProvider(),
+            ProviderKind.OPENAI_WEB_RESEARCH: OpenAIWebResearchProvider(),
         }
 
     def get(self, kind: ProviderKind) -> ProviderAdapter:

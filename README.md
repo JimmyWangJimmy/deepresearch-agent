@@ -17,7 +17,7 @@ Version `0.1.0` is the first deliverable scaffold. It includes:
 - A `dra` CLI
 - Deterministic task planning
 - Explicit source intake from files and URLs
-- Provider abstraction for attached files and live web fetch
+- Provider abstraction for attached files, live web fetch, public search providers, and optional OpenAI web research
 - Query-capable provider path for automatic source discovery
 - A run manifest and artifact system
 - Markdown, HTML, JSON, and source-ledger outputs
@@ -45,6 +45,7 @@ dra run "抓取最近30天中国机器人融资事件，输出摘要、表格和
 dra run "分析这个研究材料并生成专题简报" --file ./briefing.md
 dra run "分析某网页并生成证据化报告" --url https://example.com
 dra run "robotics industry overview" --provider wikipedia_search
+OPENAI_API_KEY=... dra run "机器人行业融资研究" --provider openai_web_research
 dra inspect <run_id>
 dra runs
 dra providers
@@ -100,7 +101,7 @@ Every run must produce:
 ## Current commands
 
 ```bash
-dra run "<task>" [--provider wikipedia_search] [--file PATH] [--url URL]
+dra run "<task>" [--provider wikipedia_search|arxiv_search|openai_web_research] [--file PATH] [--url URL]
 dra inspect <run_id>
 dra runs
 dra providers

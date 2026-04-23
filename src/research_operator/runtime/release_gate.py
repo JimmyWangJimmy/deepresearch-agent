@@ -60,7 +60,7 @@ def check_tests(repo_root: Path) -> GateCheck:
 
 def check_provider_breadth() -> GateCheck:
     available = ProviderRegistry().available()
-    passed = "wikipedia_search" in available and len(available) >= 3
+    passed = "wikipedia_search" in available and "openai_web_research" in available and len(available) >= 5
     return GateCheck(
         "provider_breadth",
         passed,

@@ -213,6 +213,7 @@ def build_run_deliverables(result) -> dict[str, str]:
         "html_report": str(result.artifacts.html_report_path),
         "pdf_report": str(result.artifacts.pdf_report_path),
         "workbook": str(result.artifacts.workbook_path),
+        "delivery_bundle": str(result.artifacts.bundle_path),
         "source_score_chart": str(result.artifacts.chart_path),
         "event_timeline_chart": str(result.artifacts.timeline_chart_path),
         "source_ledger": str(result.artifacts.source_ledger_path),

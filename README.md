@@ -25,6 +25,7 @@ Version `0.1.0` is the first deliverable scaffold. It includes:
 - CSV exports for entities and events
 - XLSX workbook export
 - PDF report export
+- ZIP delivery bundle export
 - SVG chart export
 - SVG event timeline export
 - An inspect command for previous runs
@@ -52,6 +53,7 @@ dra export <run_id> --format html --output ./deliverables/report.html
 dra export <run_id> --format events_csv --output ./deliverables/events.csv
 dra export <run_id> --format xlsx --output ./deliverables/research.xlsx
 dra export <run_id> --format pdf --output ./deliverables/research_report.pdf
+dra export <run_id> --format bundle --output ./deliverables/delivery_bundle.zip
 dra export <run_id> --format chart --output ./deliverables/source_scores.svg
 dra export <run_id> --format timeline_chart --output ./deliverables/event_timeline.svg
 dra watch create "OpenAI News" --task "监控OpenAI更新并生成摘要" --interval-minutes 60 --webhook-url https://example.com/hook --url https://openai.com/news/
@@ -103,7 +105,7 @@ dra inspect <run_id>
 dra runs
 dra providers
 dra gate
-dra export <run_id> --format html|markdown|manifest|findings|sources|entities|entities_csv|events|events_csv|xlsx|chart|timeline_chart|pdf
+dra export <run_id> --format html|markdown|manifest|findings|sources|entities|entities_csv|events|events_csv|xlsx|chart|timeline_chart|pdf|bundle
 dra watch create "<name>" --task "<task>" --interval-minutes 60 [--webhook-url URL] [--file PATH] [--url URL]
 dra watch run <watch_id> [--force]
 dra watch run-all [--due-only/--all]

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import json
+from zipfile import ZIP_DEFLATED, ZipFile
 from pathlib import Path
 
 from openpyxl import Workbook
@@ -26,6 +27,7 @@ def write_artifacts(result: RunResult, base_dir: Path) -> RunResult:
     html_report_path = run_dir / "research_report.html"
     pdf_report_path = run_dir / "research_report.pdf"
     workbook_path = run_dir / "research_workbook.xlsx"
+    bundle_path = run_dir / "delivery_bundle.zip"
     chart_path = run_dir / "source_scores.svg"
     timeline_chart_path = run_dir / "event_timeline.svg"
     source_ledger_path = run_dir / "source_ledger.json"
@@ -41,6 +43,7 @@ def write_artifacts(result: RunResult, base_dir: Path) -> RunResult:
         html_report_path=html_report_path,
         pdf_report_path=pdf_report_path,
         workbook_path=workbook_path,
+        bundle_path=bundle_path,
         chart_path=chart_path,
         timeline_chart_path=timeline_chart_path,
         source_ledger_path=source_ledger_path,
@@ -105,6 +108,7 @@ def write_artifacts(result: RunResult, base_dir: Path) -> RunResult:
     write_workbook(result, workbook_path)
     chart_path.write_text(render_source_score_chart(result), encoding="utf-8")
     timeline_chart_path.write_text(render_event_timeline_chart(result), encoding="utf-8")
+    write_delivery_bundle(result, bundle_path)
     return result
 
 
@@ -159,6 +163,7 @@ def render_markdown_report(result: RunResult) -> str:
     lines.append(f"- Events CSV: `{result.artifacts.events_csv_path}`")
     lines.append(f"- Workbook: `{result.artifacts.workbook_path}`")
     lines.append(f"- PDF Report: `{result.artifacts.pdf_report_path}`")
+    lines.append(f"- Delivery Bundle: `{result.artifacts.bundle_path}`")
     lines.append(f"- Source Score Chart: `{result.artifacts.chart_path}`")
     lines.append(f"- Event Timeline Chart: `{result.artifacts.timeline_chart_path}`")
 
@@ -357,6 +362,30 @@ def write_workbook(result: RunResult, path: Path) -> None:
         )
 
     workbook.save(path)
+
+
+def write_delivery_bundle(result: RunResult, path: Path) -> None:
+    if result.artifacts is None:
+        return
+    members = [
+        result.artifacts.manifest_path,
+        result.artifacts.report_path,
+        result.artifacts.html_report_path,
+        result.artifacts.pdf_report_path,
+        result.artifacts.findings_path,
+        result.artifacts.workbook_path,
+        result.artifacts.chart_path,
+        result.artifacts.timeline_chart_path,
+        result.artifacts.source_ledger_path,
+        result.artifacts.entities_path,
+        result.artifacts.entities_csv_path,
+        result.artifacts.events_path,
+        result.artifacts.events_csv_path,
+    ]
+    with ZipFile(path, "w", compression=ZIP_DEFLATED) as archive:
+        for member in members:
+            if member.exists():
+                archive.write(member, arcname=member.name)
 
 
 def write_pdf_report(result: RunResult, path: Path) -> None:

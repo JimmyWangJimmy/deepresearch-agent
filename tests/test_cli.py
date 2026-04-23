@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from zipfile import ZipFile
 
 from typer.testing import CliRunner
 
@@ -35,6 +36,7 @@ def test_run_creates_artifacts(tmp_path):
     assert (tmp_path / run_id / "research_report.html").exists()
     assert (tmp_path / run_id / "research_report.pdf").exists()
     assert (tmp_path / run_id / "research_workbook.xlsx").exists()
+    assert (tmp_path / run_id / "delivery_bundle.zip").exists()
     assert (tmp_path / run_id / "source_scores.svg").exists()
     assert (tmp_path / run_id / "event_timeline.svg").exists()
     assert (tmp_path / run_id / "findings.json").exists()
@@ -295,6 +297,47 @@ def test_export_copies_pdf_artifact(tmp_path):
     assert export_target.read_bytes().startswith(b"%PDF")
 
 
+def test_export_copies_delivery_bundle(tmp_path):
+    source_file = tmp_path / "bundle.txt"
+    source_file.write_text("2026年4月20日，星海机器人公司完成2亿元人民币融资。", encoding="utf-8")
+    run_result = runner.invoke(
+        app,
+        [
+            "run",
+            "输出完整交付包",
+            "--file",
+            str(source_file),
+            "--artifacts-dir",
+            str(tmp_path),
+            "--json",
+        ],
+    )
+    assert run_result.exit_code == 0
+    payload = json.loads(run_result.stdout)
+    export_target = tmp_path / "exports" / "delivery_bundle.zip"
+    export_result = runner.invoke(
+        app,
+        [
+            "export",
+            payload["run_id"],
+            "--format",
+            "bundle",
+            "--artifacts-dir",
+            str(tmp_path),
+            "--output",
+            str(export_target),
+        ],
+    )
+    assert export_result.exit_code == 0
+    assert export_target.exists()
+    with ZipFile(export_target) as archive:
+        names = set(archive.namelist())
+    assert "research_report.pdf" in names
+    assert "research_workbook.xlsx" in names
+    assert "source_scores.svg" in names
+    assert "event_timeline.svg" in names
+
+
 def test_runs_lists_history(tmp_path):
     first = runner.invoke(
         app,
@@ -415,6 +458,7 @@ def test_watch_create_and_run_detects_changes(tmp_path):
     assert notification_payload["title"]
     assert notification_payload["deliverables"]["pdf_report"].endswith("research_report.pdf")
     assert notification_payload["deliverables"]["workbook"].endswith("research_workbook.xlsx")
+    assert notification_payload["deliverables"]["delivery_bundle"].endswith("delivery_bundle.zip")
     assert notification_payload["deliverables"]["source_score_chart"].endswith("source_scores.svg")
     assert notification_payload["deliverables"]["event_timeline_chart"].endswith("event_timeline.svg")
 

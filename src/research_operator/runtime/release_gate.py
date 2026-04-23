@@ -97,6 +97,7 @@ def check_structured_outputs(repo_root: Path) -> GateCheck:
         "source_ledger.json",
         "research_report.html",
         "research_report.pdf",
+        "delivery_bundle.zip",
         "source_scores.svg",
         "event_timeline.svg",
     ]
@@ -144,7 +145,7 @@ def check_notification_surface(repo_root: Path) -> GateCheck:
     ]
     monitoring_path = repo_root / "src" / "research_operator" / "runtime" / "monitoring.py"
     text = monitoring_path.read_text(encoding="utf-8") if monitoring_path.exists() else ""
-    required_tokens = ["build_run_deliverables", "pdf_report", "workbook", "source_score_chart", "event_timeline_chart"]
+    required_tokens = ["build_run_deliverables", "pdf_report", "workbook", "delivery_bundle", "source_score_chart", "event_timeline_chart"]
     missing = [token for token in required_tokens if token not in text]
     passed = any(path.exists() for path in candidates) and not missing
     detail = "notification delivery bundle present" if passed else f"missing notification delivery fields: {', '.join(missing)}"

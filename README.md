@@ -18,6 +18,7 @@ Version `0.1.0` is the first deliverable scaffold. It includes:
 - Deterministic task planning
 - Explicit source intake from files and URLs
 - Provider abstraction for attached files and live web fetch
+- Query-capable provider path for automatic source discovery
 - A run manifest and artifact system
 - Markdown, HTML, JSON, and source-ledger outputs
 - Structured entity and event extraction
@@ -38,6 +39,7 @@ uv pip install -e ".[dev]"
 dra run "抓取最近30天中国机器人融资事件，输出摘要、表格和投资视角分析"
 dra run "分析这个研究材料并生成专题简报" --file ./briefing.md
 dra run "分析某网页并生成证据化报告" --url https://example.com
+dra run "robotics industry overview" --provider wikipedia_search
 dra inspect <run_id>
 dra runs
 dra providers
@@ -87,7 +89,7 @@ Every run must produce:
 ## Current commands
 
 ```bash
-dra run "<task>" [--file PATH] [--url URL]
+dra run "<task>" [--provider wikipedia_search] [--file PATH] [--url URL]
 dra inspect <run_id>
 dra runs
 dra providers

@@ -19,7 +19,7 @@ from research_operator.runtime.monitoring import (
     save_watch,
 )
 from research_operator.runtime.provider_registry import ProviderRegistry
-from research_operator.schemas import WatchSpec
+from research_operator.schemas import ProviderKind, WatchSpec
 
 app = typer.Typer(help="DeepResearch Agent CLI")
 watch_app = typer.Typer(help="Create and execute recurring watch definitions.")
@@ -30,6 +30,11 @@ console = Console()
 @app.command()
 def run(
     task: str = typer.Argument(..., help="Natural-language task for the agent."),
+    provider: ProviderKind | None = typer.Option(
+        None,
+        "--provider",
+        help="Optional query-capable provider used when no --file or --url inputs are attached.",
+    ),
     url: list[str] = typer.Option(
         None,
         "--url",
@@ -56,7 +61,13 @@ def run(
         help="Print the final run result as JSON.",
     ),
 ) -> None:
-    result = execute_task(task, artifacts_dir, urls=url, files=file)
+    result = execute_task(
+        task,
+        artifacts_dir,
+        urls=url,
+        files=file,
+        query_provider=provider,
+    )
 
     if json_output:
         typer.echo(json.dumps(result.model_dump(mode="json"), indent=2, ensure_ascii=False))

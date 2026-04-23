@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from pathlib import Path
+from urllib.parse import quote
 
 from research_operator.schemas import CollectedSource, ProviderKind, SourceRecord
-from research_operator.runtime.source_io import fetch_url_text, make_excerpt, read_file_text
+from research_operator.runtime.source_io import fetch_json, fetch_url_text, make_excerpt, read_file_text
 
 
 class ProviderAdapter(ABC):
@@ -13,6 +14,9 @@ class ProviderAdapter(ABC):
     @abstractmethod
     def collect(self, locator: str) -> CollectedSource:
         raise NotImplementedError
+
+    def collect_query(self, query: str) -> list[CollectedSource]:
+        raise NotImplementedError(f"{self.kind.value} does not support query collection")
 
 
 class AttachedFileProvider(ProviderAdapter):
@@ -54,11 +58,128 @@ class WebFetchProvider(ProviderAdapter):
         )
 
 
+class WikipediaSearchProvider(ProviderAdapter):
+    kind = ProviderKind.WIKIPEDIA_SEARCH
+
+    def collect(self, locator: str) -> CollectedSource:
+        text = fetch_url_text(locator)
+        return CollectedSource(
+            record=SourceRecord(
+                label=locator,
+                kind="url",
+                locator=locator,
+                excerpt=make_excerpt(text),
+                content_chars=len(text),
+                provider=self.kind,
+            ),
+            content=text,
+        )
+
+    def collect_query(self, query: str) -> list[CollectedSource]:
+        collected: list[CollectedSource] = []
+        for candidate in build_query_candidates(query):
+            search_payload = fetch_json(
+                "https://en.wikipedia.org/w/api.php",
+                {
+                    "action": "opensearch",
+                    "search": candidate,
+                    "limit": "3",
+                    "namespace": "0",
+                    "format": "json",
+                },
+            )
+            if not isinstance(search_payload, list) or len(search_payload) < 2:
+                continue
+            titles = rank_titles(search_payload[1][:6], candidate)
+            for title in titles[:3]:
+                if not isinstance(title, str) or not title.strip():
+                    continue
+                summary_payload = fetch_json(
+                    f"https://en.wikipedia.org/api/rest_v1/page/summary/{quote(title)}"
+                )
+                if not isinstance(summary_payload, dict):
+                    continue
+                summary = str(summary_payload.get("extract") or "").strip()
+                page_url = (
+                    summary_payload.get("content_urls", {})
+                    .get("desktop", {})
+                    .get("page", f"https://en.wikipedia.org/wiki/{quote(title)}")
+                )
+                if not summary:
+                    continue
+                collected.append(
+                    CollectedSource(
+                        record=SourceRecord(
+                            label=title,
+                            kind="search_result",
+                            locator=str(page_url),
+                            excerpt=make_excerpt(summary),
+                            content_chars=len(summary),
+                            provider=self.kind,
+                        ),
+                        content=summary,
+                    )
+                )
+            if collected:
+                break
+        return collected
+
+
+def build_query_candidates(query: str) -> list[str]:
+    candidates = [query.strip()]
+    lowered = query.lower()
+    for token in ["overview", "analysis", "report", "research", "industry", "market"]:
+        lowered = lowered.replace(token, " ")
+    simplified = " ".join(lowered.split())
+    if simplified and simplified not in candidates:
+        candidates.append(simplified)
+    if simplified:
+        first_two = " ".join(simplified.split()[:2])
+        if first_two and first_two not in candidates:
+            candidates.append(first_two)
+        first_one = simplified.split()[0]
+        if first_one and first_one not in candidates:
+            candidates.append(first_one)
+    return candidates
+
+
+def rank_titles(titles: list[object], query: str) -> list[str]:
+    normalized_query = normalize_query(query)
+    query_terms = set(normalized_query.split())
+    ranked: list[tuple[int, str]] = []
+    for title in titles:
+        if not isinstance(title, str):
+            continue
+        cleaned = title.strip()
+        if not cleaned:
+            continue
+        if ";" in cleaned:
+            continue
+        score = 0
+        lower = cleaned.lower()
+        if any(bad in cleaned for bad in ["(", ")"]):
+            score -= 3
+        if lower == normalized_query:
+            score += 5
+        if lower.startswith(normalized_query):
+            score += 3
+        title_terms = set(normalize_query(cleaned).split())
+        score += len(query_terms & title_terms) * 2
+        ranked.append((score, cleaned))
+    ranked.sort(key=lambda item: (-item[0], item[1]))
+    return [title for _, title in ranked if _ >= 0]
+
+
+def normalize_query(value: str) -> str:
+    return " ".join(value.lower().split())
+
+
 class ProviderRegistry:
     def __init__(self) -> None:
         self._providers = {
             ProviderKind.ATTACHED: AttachedFileProvider(),
             ProviderKind.WEB_FETCH: WebFetchProvider(),
+            ProviderKind.WIKIPEDIA_SEARCH: WikipediaSearchProvider(),
         }
 
     def get(self, kind: ProviderKind) -> ProviderAdapter:

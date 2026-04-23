@@ -5,6 +5,7 @@ import json
 from typer.testing import CliRunner
 
 from research_operator.cli import app
+from research_operator.schemas import CollectedSource, ProviderKind, SourceRecord
 
 
 runner = CliRunner()
@@ -368,3 +369,54 @@ def test_watch_list_due_only_filters_not_due(tmp_path):
     )
     assert due_list.exit_code == 0
     assert json.loads(due_list.stdout) == []
+
+
+def test_run_uses_query_provider_when_no_sources(tmp_path, monkeypatch):
+    from research_operator.runtime.provider_registry import WikipediaSearchProvider
+
+    def fake_collect_query(self, query: str):
+        return [
+            CollectedSource(
+                record=SourceRecord(
+                    label="Robotics",
+                    kind="search_result",
+                    locator="https://example.com/robotics",
+                    excerpt="Robotics is an interdisciplinary branch of engineering.",
+                    content_chars=56,
+                    provider=ProviderKind.WIKIPEDIA_SEARCH,
+                ),
+                content="Robotics is an interdisciplinary branch of engineering.",
+            )
+        ]
+
+    monkeypatch.setattr(WikipediaSearchProvider, "collect_query", fake_collect_query)
+
+    result = runner.invoke(
+        app,
+        [
+            "run",
+            "robotics industry overview",
+            "--provider",
+            "wikipedia_search",
+            "--artifacts-dir",
+            str(tmp_path),
+            "--json",
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["sources"][0]["provider"] == "wikipedia_search"
+    assert payload["sources"][0]["label"] == "Robotics"
+
+
+def test_wikipedia_title_ranking_prefers_reference_results():
+    from research_operator.runtime.provider_registry import rank_titles
+
+    ranked = rank_titles(
+        ["Robotics;Notes", "Robotics", "Robotics engineering"],
+        "robotics industry overview",
+    )
+
+    assert ranked[0] == "Robotics"
+    assert "Robotics;Notes" not in ranked

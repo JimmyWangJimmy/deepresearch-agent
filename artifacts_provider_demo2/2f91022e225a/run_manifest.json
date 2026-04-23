@@ -1,0 +1,116 @@
+{
+  "run_id": "2f91022e225a",
+  "created_at": "2026-04-23T03:57:55.846581Z",
+  "task": "robotics industry overview",
+  "plan": {
+    "task_type": "general",
+    "objective": "robotics industry overview",
+    "assumptions": [
+      "This scaffold uses deterministic planning instead of live provider calls.",
+      "Future versions will route across external deep research providers and internal tools.",
+      "Artifacts are the primary delivery surface; chat text is secondary."
+    ],
+    "steps": [
+      {
+        "id": "scope",
+        "title": "Scope task",
+        "description": "Interpret the natural-language request and derive the execution scope.",
+        "status": "completed"
+      },
+      {
+        "id": "collect",
+        "title": "Collect evidence",
+        "description": "Select providers and gather raw sources for the run.",
+        "status": "completed"
+      },
+      {
+        "id": "process",
+        "title": "Process and normalize",
+        "description": "Clean, deduplicate, and organize source material into structured findings.",
+        "status": "completed"
+      },
+      {
+        "id": "deliver",
+        "title": "Deliver artifacts",
+        "description": "Render report and machine-readable outputs for downstream workflows.",
+        "status": "completed"
+      }
+    ]
+  },
+  "findings": [
+    {
+      "title": "Agent-native execution model",
+      "detail": "The product should treat the request as a run with explicit planning, execution state, and exportable artifacts instead of a chat-only interaction.",
+      "confidence": "high"
+    },
+    {
+      "title": "Artifact-first delivery contract",
+      "detail": "Every run should emit a manifest, report, structured findings, and a source ledger so results can be audited and reused by teams.",
+      "confidence": "high"
+    },
+    {
+      "title": "General workflow fit",
+      "detail": "This request does not yet map to a specialized flow. The runtime should fall back to generic planning and then route into collection, processing, and delivery.",
+      "confidence": "medium"
+    },
+    {
+      "title": "Task captured",
+      "detail": "The current run objective is: robotics industry overview",
+      "confidence": "high"
+    },
+    {
+      "title": "Evidence intake",
+      "detail": "The run ingested 3 source(s) spanning 1163 characters of raw content.",
+      "confidence": "high"
+    },
+    {
+      "title": "First-source preview",
+      "detail": "Robotics: Robotics is the interdisciplinary study and practice of the design, construction, operation, and use of robots. A roboticist is someone who specializes in robotics. Robotics usually combines four aspects of design work: a power source, mech",
+      "confidence": "medium"
+    }
+  ],
+  "entities": [],
+  "events": [],
+  "sources": [
+    {
+      "label": "Robotics",
+      "kind": "search_result",
+      "locator": "https://en.wikipedia.org/wiki/Robotics",
+      "excerpt": "Robotics is the interdisciplinary study and practice of the design, construction, operation, and use of robots. A roboticist is someone who specializes in robotics. Robotics usually combines four aspects of design work: a power source, mech",
+      "content_chars": 292,
+      "provider": "wikipedia_search"
+    },
+    {
+      "label": "Robotics engineering",
+      "kind": "search_result",
+      "locator": "https://en.wikipedia.org/wiki/Robotics_engineering",
+      "excerpt": "Robotics engineering is a branch of engineering that focuses on the conception, design, manufacturing, and operation of robots. It involves a multidisciplinary approach, drawing primarily from mechanical, electrical, software, and artificia",
+      "content_chars": 272,
+      "provider": "wikipedia_search"
+    },
+    {
+      "label": "Robotics;Notes",
+      "kind": "search_result",
+      "locator": "https://en.wikipedia.org/wiki/Robotics%3BNotes",
+      "excerpt": "Robotics;Notes is a visual novel video game developed by 5pb. It is the third main game in the Science Adventure series, following Chaos;Head and Steins;Gate, and is described by the developers as an \"Augmented Science Adventure\". The game ",
+      "content_chars": 599,
+      "provider": "wikipedia_search"
+    }
+  ],
+  "outputs": [
+    "markdown",
+    "json",
+    "html"
+  ],
+  "artifacts": {
+    "manifest_path": "artifacts_provider_demo2/2f91022e225a/run_manifest.json",
+    "report_path": "artifacts_provider_demo2/2f91022e225a/research_report.md",
+    "findings_path": "artifacts_provider_demo2/2f91022e225a/findings.json",
+    "html_report_path": "artifacts_provider_demo2/2f91022e225a/research_report.html",
+    "source_ledger_path": "artifacts_provider_demo2/2f91022e225a/source_ledger.json",
+    "entities_path": "artifacts_provider_demo2/2f91022e225a/entities.json",
+    "entities_csv_path": "artifacts_provider_demo2/2f91022e225a/entities.csv",
+    "events_path": "artifacts_provider_demo2/2f91022e225a/events.json",
+    "events_csv_path": "artifacts_provider_demo2/2f91022e225a/events.csv"
+  }
+}

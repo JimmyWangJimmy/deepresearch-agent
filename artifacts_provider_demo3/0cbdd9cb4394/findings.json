@@ -1,0 +1,32 @@
+[
+  {
+    "title": "Agent-native execution model",
+    "detail": "The product should treat the request as a run with explicit planning, execution state, and exportable artifacts instead of a chat-only interaction.",
+    "confidence": "high"
+  },
+  {
+    "title": "Artifact-first delivery contract",
+    "detail": "Every run should emit a manifest, report, structured findings, and a source ledger so results can be audited and reused by teams.",
+    "confidence": "high"
+  },
+  {
+    "title": "General workflow fit",
+    "detail": "This request does not yet map to a specialized flow. The runtime should fall back to generic planning and then route into collection, processing, and delivery.",
+    "confidence": "medium"
+  },
+  {
+    "title": "Task captured",
+    "detail": "The current run objective is: robotics industry overview",
+    "confidence": "high"
+  },
+  {
+    "title": "Evidence intake",
+    "detail": "The run ingested 2 source(s) spanning 564 characters of raw content.",
+    "confidence": "high"
+  },
+  {
+    "title": "First-source preview",
+    "detail": "Robotics: Robotics is the interdisciplinary study and practice of the design, construction, operation, and use of robots. A roboticist is someone who specializes in robotics. Robotics usually combines four aspects of design work: a power source, mech",
+    "confidence": "medium"
+  }
+]

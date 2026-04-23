@@ -1,0 +1,27 @@
+[
+  {
+    "title": "Agent-native execution model",
+    "detail": "The product should treat the request as a run with explicit planning, execution state, and exportable artifacts instead of a chat-only interaction.",
+    "confidence": "high"
+  },
+  {
+    "title": "Artifact-first delivery contract",
+    "detail": "Every run should emit a manifest, report, structured findings, and a source ledger so results can be audited and reused by teams.",
+    "confidence": "high"
+  },
+  {
+    "title": "General workflow fit",
+    "detail": "This request does not yet map to a specialized flow. The runtime should fall back to generic planning and then route into collection, processing, and delivery.",
+    "confidence": "medium"
+  },
+  {
+    "title": "Task captured",
+    "detail": "The current run objective is: robotics industry overview",
+    "confidence": "high"
+  },
+  {
+    "title": "No evidence attached",
+    "detail": "This run did not include explicit files or URLs. It still produced artifacts, but live research providers need to be connected for evidence-backed output.",
+    "confidence": "medium"
+  }
+]

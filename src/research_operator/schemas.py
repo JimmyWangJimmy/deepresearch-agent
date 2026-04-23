@@ -33,6 +33,7 @@ class OutputFormat(str, Enum):
 class ProviderKind(str, Enum):
     ATTACHED = "attached"
     WEB_FETCH = "web_fetch"
+    WIKIPEDIA_SEARCH = "wikipedia_search"
 
 
 class PlanStep(BaseModel):

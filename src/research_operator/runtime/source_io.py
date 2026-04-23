@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import csv
+import json
 import re
 from html import unescape
 from pathlib import Path
+from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 
@@ -20,6 +22,22 @@ def fetch_url_text(url: str) -> str:
         charset = response.headers.get_content_charset() or "utf-8"
         html = response.read().decode(charset, errors="replace")
     return html_to_text(html)
+
+
+def fetch_json(url: str, params: dict[str, str] | None = None) -> object:
+    final_url = f"{url}?{urlencode(params)}" if params else url
+    request = Request(
+        final_url,
+        headers={
+            "User-Agent": (
+                "DeepResearchAgent/0.1 (+https://github.com/JimmyWangJimmy/deepresearch-agent)"
+            )
+        },
+    )
+    with urlopen(request, timeout=20) as response:
+        charset = response.headers.get_content_charset() or "utf-8"
+        payload = response.read().decode(charset, errors="replace")
+    return json.loads(payload)
 
 
 def read_file_text(path: Path) -> str:

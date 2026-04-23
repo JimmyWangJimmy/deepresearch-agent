@@ -10,6 +10,7 @@ from rich.panel import Panel
 from rich.table import Table
 
 from research_operator.config import AppConfig
+from research_operator.runtime.doctor import run_doctor
 from research_operator.runtime.engine import execute_task
 from research_operator.runtime.monitoring import (
     build_watch_sources,
@@ -241,6 +242,37 @@ def providers(
     table.add_column("Provider")
     for name in available:
         table.add_row(name)
+    console.print(table)
+
+
+@app.command()
+def doctor(
+    artifacts_dir: Path = typer.Option(
+        AppConfig().artifacts_dir,
+        "--artifacts-dir",
+        help="Directory to test for artifact writes.",
+    ),
+    json_output: bool = typer.Option(
+        False,
+        "--json",
+        help="Print doctor checks as JSON.",
+    ),
+) -> None:
+    checks = run_doctor(artifacts_dir)
+    payload = [
+        {"name": item.name, "passed": item.passed, "detail": item.detail}
+        for item in checks
+    ]
+    if json_output:
+        typer.echo(json.dumps({"ready": all(item["passed"] for item in payload), "checks": payload}, indent=2))
+        return
+
+    table = Table(title="Doctor")
+    table.add_column("Check")
+    table.add_column("Passed")
+    table.add_column("Detail")
+    for item in payload:
+        table.add_row(item["name"], str(item["passed"]), item["detail"])
     console.print(table)
 
 

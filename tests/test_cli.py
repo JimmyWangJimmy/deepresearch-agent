@@ -502,6 +502,18 @@ def test_providers_lists_available_backends():
     assert "openai_web_research" in payload
 
 
+def test_doctor_reports_environment_status(tmp_path, monkeypatch):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    result = runner.invoke(app, ["doctor", "--artifacts-dir", str(tmp_path), "--json"])
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["ready"] is False
+    checks = {item["name"]: item for item in payload["checks"]}
+    assert checks["artifacts_dir"]["passed"] is True
+    assert checks["providers"]["passed"] is True
+    assert checks["openai_web_research"]["passed"] is False
+
+
 def test_watch_run_all_executes_multiple_specs(tmp_path):
     first_file = tmp_path / "first.txt"
     second_file = tmp_path / "second.txt"

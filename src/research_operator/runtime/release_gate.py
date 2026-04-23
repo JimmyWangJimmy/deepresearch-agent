@@ -71,7 +71,7 @@ def check_provider_breadth() -> GateCheck:
 def check_cli_surface(repo_root: Path) -> GateCheck:
     cli_path = repo_root / "src" / "research_operator" / "cli.py"
     text = cli_path.read_text(encoding="utf-8")
-    required_tokens = ["def run(", "def export(", "def providers(", "def runs(", "def quality("]
+    required_tokens = ["def run(", "def export(", "def providers(", "def runs(", "def quality(", "def doctor("]
     missing = [token for token in required_tokens if token not in text]
     passed = not missing
     detail = "cli surface complete" if passed else f"missing CLI commands: {', '.join(missing)}"

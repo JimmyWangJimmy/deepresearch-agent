@@ -50,6 +50,7 @@ dra inspect <run_id>
 dra quality <run_id>
 dra runs
 dra providers
+dra doctor
 dra gate
 dra export <run_id> --format html --output ./deliverables/report.html
 dra export <run_id> --format events_csv --output ./deliverables/events.csv
@@ -108,6 +109,7 @@ dra inspect <run_id>
 dra quality <run_id>
 dra runs
 dra providers
+dra doctor [--json]
 dra gate
 dra export <run_id> --format html|markdown|manifest|findings|sources|entities|entities_csv|events|events_csv|xlsx|chart|timeline_chart|pdf|bundle
 dra watch create "<name>" --task "<task>" --interval-minutes 60 [--webhook-url URL] [--file PATH] [--url URL]

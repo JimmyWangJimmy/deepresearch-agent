@@ -10,6 +10,8 @@ This repository starts from a simple rule:
 
 The product is designed to aggregate upstream research providers, run internal processing and analysis, and ship artifacts that teams can actually use.
 
+[![CI](https://github.com/JimmyWangJimmy/deepresearch-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/JimmyWangJimmy/deepresearch-agent/actions/workflows/ci.yml)
+
 ## Current scope
 
 Version `0.1.0` is the first deliverable scaffold. It includes:

@@ -33,6 +33,7 @@ def test_run_creates_artifacts(tmp_path):
     assert (tmp_path / run_id / "run_manifest.json").exists()
     assert (tmp_path / run_id / "research_report.md").exists()
     assert (tmp_path / run_id / "research_report.html").exists()
+    assert (tmp_path / run_id / "research_workbook.xlsx").exists()
     assert (tmp_path / run_id / "findings.json").exists()
     assert (tmp_path / run_id / "source_ledger.json").exists()
     assert (tmp_path / run_id / "entities.json").exists()
@@ -103,6 +104,7 @@ def test_export_copies_html_artifact(tmp_path):
     assert export_result.exit_code == 0
     assert export_target.exists()
     assert "<!doctype html>" in export_target.read_text(encoding="utf-8").lower()
+    assert "Executive Summary" in export_target.read_text(encoding="utf-8")
 
 
 def test_export_copies_events_csv(tmp_path):
@@ -139,6 +141,41 @@ def test_export_copies_events_csv(tmp_path):
     )
     assert export_result.exit_code == 0
     assert "event_type" in export_target.read_text(encoding="utf-8")
+
+
+def test_export_copies_xlsx_artifact(tmp_path):
+    source_file = tmp_path / "xlsx.txt"
+    source_file.write_text("2026年4月20日，星海机器人公司完成2亿元人民币融资。", encoding="utf-8")
+    run_result = runner.invoke(
+        app,
+        [
+            "run",
+            "输出 Excel 交付物",
+            "--file",
+            str(source_file),
+            "--artifacts-dir",
+            str(tmp_path),
+            "--json",
+        ],
+    )
+    assert run_result.exit_code == 0
+    payload = json.loads(run_result.stdout)
+    export_target = tmp_path / "exports" / "research.xlsx"
+    export_result = runner.invoke(
+        app,
+        [
+            "export",
+            payload["run_id"],
+            "--format",
+            "xlsx",
+            "--artifacts-dir",
+            str(tmp_path),
+            "--output",
+            str(export_target),
+        ],
+    )
+    assert export_result.exit_code == 0
+    assert export_target.exists()
 
 
 def test_runs_lists_history(tmp_path):
@@ -252,6 +289,9 @@ def test_watch_create_and_run_detects_changes(tmp_path):
     digest_path = tmp_path / "watches" / created["watch_id"] / "last_digest.md"
     assert digest_path.exists()
     assert "Changed Sources" in digest_path.read_text(encoding="utf-8")
+    notification_path = tmp_path / "watches" / created["watch_id"] / "notification.txt"
+    assert notification_path.exists()
+    assert "new_run_id=" in notification_path.read_text(encoding="utf-8")
 
 
 def test_providers_lists_available_backends():
@@ -410,6 +450,44 @@ def test_run_uses_query_provider_when_no_sources(tmp_path, monkeypatch):
     assert payload["sources"][0]["label"] == "Robotics"
 
 
+def test_run_supports_second_query_provider(tmp_path, monkeypatch):
+    from research_operator.runtime.provider_registry import ArxivSearchProvider
+
+    def fake_collect_query(self, query: str):
+        return [
+            CollectedSource(
+                record=SourceRecord(
+                    label="Vision-Language Models for Robotics",
+                    kind="search_result",
+                    locator="https://arxiv.org/abs/1234.5678",
+                    excerpt="A survey of robotics research.",
+                    content_chars=30,
+                    provider=ProviderKind.ARXIV_SEARCH,
+                ),
+                content="A survey of robotics research.",
+            )
+        ]
+
+    monkeypatch.setattr(ArxivSearchProvider, "collect_query", fake_collect_query)
+
+    result = runner.invoke(
+        app,
+        [
+            "run",
+            "robotics research survey",
+            "--provider",
+            "arxiv_search",
+            "--artifacts-dir",
+            str(tmp_path),
+            "--json",
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["sources"][0]["provider"] == "arxiv_search"
+
+
 def test_wikipedia_title_ranking_prefers_reference_results():
     from research_operator.runtime.provider_registry import rank_titles
 
@@ -420,3 +498,83 @@ def test_wikipedia_title_ranking_prefers_reference_results():
 
     assert ranked[0] == "Robotics"
     assert "Robotics;Notes" not in ranked
+
+
+def test_gate_reports_blocked_state():
+    result = runner.invoke(app, ["gate", "--json"])
+    assert result.exit_code in {0, 2}
+    payload = json.loads(result.stdout)
+    assert "ready" in payload
+    assert payload["checks"]
+
+
+def test_markdown_report_contains_customer_sections(tmp_path):
+    source_file = tmp_path / "report.txt"
+    source_file.write_text("2026年4月20日，星海机器人公司完成2亿元人民币融资。", encoding="utf-8")
+    result = runner.invoke(
+        app,
+        [
+            "run",
+            "生成客户级研究报告",
+            "--file",
+            str(source_file),
+            "--artifacts-dir",
+            str(tmp_path),
+            "--json",
+        ],
+    )
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    report = (tmp_path / payload["run_id"] / "research_report.md").read_text(encoding="utf-8")
+    assert "## Executive Summary" in report
+    assert "## Key Evidence" in report
+    assert "## Citations" in report
+    assert "## Limitations" in report
+
+
+def test_fusion_collapses_duplicate_sources_and_records():
+    from research_operator.runtime.fusion import fuse_entities, fuse_events, fuse_sources
+
+    source = CollectedSource(
+        record=SourceRecord(
+            label="Robotics",
+            kind="search_result",
+            locator="https://example.com/robotics",
+            excerpt="Robotics",
+            content_chars=8,
+            provider=ProviderKind.WIKIPEDIA_SEARCH,
+        ),
+        content="Robotics overview",
+    )
+    dup_source = CollectedSource(
+        record=SourceRecord(
+            label="Robotics duplicate",
+            kind="search_result",
+            locator="https://example.com/robotics/",
+            excerpt="Robotics",
+            content_chars=8,
+            provider=ProviderKind.WIKIPEDIA_SEARCH,
+        ),
+        content="Robotics   overview",
+    )
+    assert len(fuse_sources([source, dup_source])) == 1
+
+    entity = {
+        "entity": "星海机器人公司",
+        "category": "organization",
+        "source_label": "a",
+        "source_locator": "x",
+    }
+    event = {
+        "event_type": "financing",
+        "subject": "星海机器人公司",
+        "amount": "2亿元人民币",
+        "event_date": "2026年4月20日",
+        "source_label": "a",
+        "source_locator": "x",
+        "evidence": "sample",
+    }
+    from research_operator.schemas import ExtractedEntity, ExtractedEvent
+
+    assert len(fuse_entities([ExtractedEntity(**entity), ExtractedEntity(**entity)])) == 1
+    assert len(fuse_events([ExtractedEvent(**event), ExtractedEvent(**event)])) == 1

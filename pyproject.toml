@@ -13,6 +13,9 @@ authors = [
   { name = "Jimmy Wang" }
 ]
 dependencies = [
+  "fastapi>=0.116.0",
+  "httpx>=0.28.0",
+  "openpyxl>=3.1.5",
   "pydantic>=2.11.0",
   "typer>=0.16.0",
   "rich>=14.0.0",
@@ -32,4 +35,3 @@ packages = ["src/research_operator"]
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
-

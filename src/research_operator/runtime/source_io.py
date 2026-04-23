@@ -7,6 +7,7 @@ from html import unescape
 from pathlib import Path
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
+from xml.etree import ElementTree
 
 
 def fetch_url_text(url: str) -> str:
@@ -38,6 +39,22 @@ def fetch_json(url: str, params: dict[str, str] | None = None) -> object:
         charset = response.headers.get_content_charset() or "utf-8"
         payload = response.read().decode(charset, errors="replace")
     return json.loads(payload)
+
+
+def fetch_xml(url: str, params: dict[str, str] | None = None) -> ElementTree.Element:
+    final_url = f"{url}?{urlencode(params)}" if params else url
+    request = Request(
+        final_url,
+        headers={
+            "User-Agent": (
+                "DeepResearchAgent/0.1 (+https://github.com/JimmyWangJimmy/deepresearch-agent)"
+            )
+        },
+    )
+    with urlopen(request, timeout=20) as response:
+        charset = response.headers.get_content_charset() or "utf-8"
+        payload = response.read().decode(charset, errors="replace")
+    return ElementTree.fromstring(payload)
 
 
 def read_file_text(path: Path) -> str:

@@ -5,7 +5,7 @@ from pathlib import Path
 from urllib.parse import quote
 
 from research_operator.schemas import CollectedSource, ProviderKind, SourceRecord
-from research_operator.runtime.source_io import fetch_json, fetch_url_text, make_excerpt, read_file_text
+from research_operator.runtime.source_io import fetch_json, fetch_url_text, fetch_xml, make_excerpt, read_file_text
 
 
 class ProviderAdapter(ABC):
@@ -125,6 +125,56 @@ class WikipediaSearchProvider(ProviderAdapter):
         return collected
 
 
+class ArxivSearchProvider(ProviderAdapter):
+    kind = ProviderKind.ARXIV_SEARCH
+
+    def collect(self, locator: str) -> CollectedSource:
+        text = fetch_url_text(locator)
+        return CollectedSource(
+            record=SourceRecord(
+                label=locator,
+                kind="url",
+                locator=locator,
+                excerpt=make_excerpt(text),
+                content_chars=len(text),
+                provider=self.kind,
+            ),
+            content=text,
+        )
+
+    def collect_query(self, query: str) -> list[CollectedSource]:
+        feed = fetch_xml(
+            "https://export.arxiv.org/api/query",
+            {
+                "search_query": f"all:{query}",
+                "start": "0",
+                "max_results": "3",
+            },
+        )
+        ns = {"atom": "http://www.w3.org/2005/Atom"}
+        collected: list[CollectedSource] = []
+        for entry in feed.findall("atom:entry", ns)[:3]:
+            title = (entry.findtext("atom:title", default="", namespaces=ns) or "").strip()
+            summary = (entry.findtext("atom:summary", default="", namespaces=ns) or "").strip()
+            locator = (entry.findtext("atom:id", default="", namespaces=ns) or "").strip()
+            if not title or not summary or not locator:
+                continue
+            collected.append(
+                CollectedSource(
+                    record=SourceRecord(
+                        label=title,
+                        kind="search_result",
+                        locator=locator,
+                        excerpt=make_excerpt(summary),
+                        content_chars=len(summary),
+                        provider=self.kind,
+                    ),
+                    content=summary,
+                )
+            )
+        return collected
+
+
 def build_query_candidates(query: str) -> list[str]:
     candidates = [query.strip()]
     lowered = query.lower()
@@ -180,6 +230,7 @@ class ProviderRegistry:
             ProviderKind.ATTACHED: AttachedFileProvider(),
             ProviderKind.WEB_FETCH: WebFetchProvider(),
             ProviderKind.WIKIPEDIA_SEARCH: WikipediaSearchProvider(),
+            ProviderKind.ARXIV_SEARCH: ArxivSearchProvider(),
         }
 
     def get(self, kind: ProviderKind) -> ProviderAdapter:

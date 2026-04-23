@@ -7,6 +7,7 @@ from pathlib import Path
 
 from research_operator.config import AppConfig
 from research_operator.runtime.engine import execute_task
+from research_operator.runtime.notifications import write_notification
 from research_operator.runtime.provider_registry import ProviderRegistry
 from research_operator.schemas import (
     ProviderKind,
@@ -111,6 +112,11 @@ def execute_watch(
     )
     digest_path = watch_dir / "last_digest.md"
     digest_path.write_text(render_watch_digest(spec, execution), encoding="utf-8")
+    write_notification(
+        watch_dir,
+        title=f"Watch {spec.name} execution",
+        body=render_notification_body(spec, execution),
+    )
     spec.last_run_at = execution.executed_at
     spec.next_run_at = execution.executed_at + timedelta(minutes=spec.interval_minutes)
     save_watch(spec, watches_dir)
@@ -176,3 +182,14 @@ def render_watch_digest(spec: WatchSpec, execution: WatchExecution) -> str:
         lines.append("- No unchanged sources recorded.")
 
     return "\n".join(lines) + "\n"
+
+
+def render_notification_body(spec: WatchSpec, execution: WatchExecution) -> str:
+    return (
+        f"watch_id={spec.watch_id}\n"
+        f"task={spec.task}\n"
+        f"new_run_id={execution.new_run_id or 'none'}\n"
+        f"changed_sources={len(execution.changed_sources)}\n"
+        f"unchanged_sources={len(execution.unchanged_sources)}\n"
+        f"skipped_reason={execution.skipped_reason or 'none'}"
+    )

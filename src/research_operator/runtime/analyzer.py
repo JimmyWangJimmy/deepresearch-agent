@@ -114,6 +114,17 @@ def generate_findings(
                     confidence="high",
                 )
             )
+        if len(collected) > 1:
+            base.append(
+                Finding(
+                    title="Multi-source fusion applied",
+                    detail=(
+                        "The runtime deduplicated collected sources and collapsed overlapping "
+                        "entity/event records before artifact generation."
+                    ),
+                    confidence="medium",
+                )
+            )
         first = collected[0].record
         if first.excerpt:
             base.append(

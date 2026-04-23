@@ -28,12 +28,14 @@ class OutputFormat(str, Enum):
     MARKDOWN = "markdown"
     JSON = "json"
     HTML = "html"
+    XLSX = "xlsx"
 
 
 class ProviderKind(str, Enum):
     ATTACHED = "attached"
     WEB_FETCH = "web_fetch"
     WIKIPEDIA_SEARCH = "wikipedia_search"
+    ARXIV_SEARCH = "arxiv_search"
 
 
 class PlanStep(BaseModel):
@@ -92,6 +94,7 @@ class RunArtifacts(BaseModel):
     report_path: Path
     findings_path: Path
     html_report_path: Path
+    workbook_path: Path
     source_ledger_path: Path
     entities_path: Path
     entities_csv_path: Path

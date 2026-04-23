@@ -19,6 +19,7 @@ from research_operator.runtime.monitoring import (
     save_watch,
 )
 from research_operator.runtime.provider_registry import ProviderRegistry
+from research_operator.runtime.release_gate import run_release_gate
 from research_operator.schemas import ProviderKind, WatchSpec
 
 app = typer.Typer(help="DeepResearch Agent CLI")
@@ -84,6 +85,7 @@ def run(
     summary.add_row("Task Type", result.plan.task_type.value)
     summary.add_row("Report", str(result.artifacts.report_path))
     summary.add_row("HTML", str(result.artifacts.html_report_path))
+    summary.add_row("Workbook", str(result.artifacts.workbook_path))
     summary.add_row("Entities CSV", str(result.artifacts.entities_csv_path))
     summary.add_row("Events CSV", str(result.artifacts.events_csv_path))
     summary.add_row("Manifest", str(result.artifacts.manifest_path))
@@ -154,7 +156,7 @@ def runs(
 @app.command()
 def export(
     run_id: str = typer.Argument(..., help="Run identifier to export."),
-    format: str = typer.Option(..., "--format", help="Export format: html, markdown, manifest, findings, sources, entities, entities_csv, events, events_csv."),
+    format: str = typer.Option(..., "--format", help="Export format: html, markdown, manifest, findings, sources, entities, entities_csv, events, events_csv, xlsx."),
     artifacts_dir: Path = typer.Option(
         AppConfig().artifacts_dir,
         "--artifacts-dir",
@@ -172,6 +174,7 @@ def export(
         "markdown": run_dir / "research_report.md",
         "manifest": run_dir / "run_manifest.json",
         "findings": run_dir / "findings.json",
+        "xlsx": run_dir / "research_workbook.xlsx",
         "sources": run_dir / "source_ledger.json",
         "entities": run_dir / "entities.json",
         "entities_csv": run_dir / "entities.csv",
@@ -211,6 +214,41 @@ def providers(
     for name in available:
         table.add_row(name)
     console.print(table)
+
+
+@app.command()
+def gate(
+    json_output: bool = typer.Option(
+        False,
+        "--json",
+        help="Print gate report as JSON.",
+    ),
+) -> None:
+    report = run_release_gate(Path.cwd())
+    payload = {
+        "ready": report.ready,
+        "checks": [
+            {
+                "name": item.name,
+                "passed": item.passed,
+                "detail": item.detail,
+            }
+            for item in report.checks
+        ],
+    }
+    if json_output:
+        typer.echo(json.dumps(payload, indent=2, ensure_ascii=False))
+        raise typer.Exit(code=0 if report.ready else 2)
+
+    table = Table(title="Release Gate")
+    table.add_column("Check")
+    table.add_column("Status")
+    table.add_column("Detail")
+    for item in report.checks:
+        table.add_row(item.name, "PASS" if item.passed else "BLOCK", item.detail)
+    console.print(table)
+    console.print("READY" if report.ready else "BLOCKED")
+    raise typer.Exit(code=0 if report.ready else 2)
 
 
 @watch_app.command("create")

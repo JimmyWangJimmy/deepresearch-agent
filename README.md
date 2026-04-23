@@ -23,6 +23,7 @@ Version `0.1.0` is the first deliverable scaffold. It includes:
 - Markdown, HTML, JSON, and source-ledger outputs
 - Structured entity and event extraction
 - CSV exports for entities and events
+- XLSX workbook export
 - An inspect command for previous runs
 - An export command for downstream delivery
 - Watch definitions for recurring change detection
@@ -43,8 +44,10 @@ dra run "robotics industry overview" --provider wikipedia_search
 dra inspect <run_id>
 dra runs
 dra providers
+dra gate
 dra export <run_id> --format html --output ./deliverables/report.html
 dra export <run_id> --format events_csv --output ./deliverables/events.csv
+dra export <run_id> --format xlsx --output ./deliverables/research.xlsx
 dra watch create "OpenAI News" --task "监控OpenAI更新并生成摘要" --interval-minutes 60 --url https://openai.com/news/
 dra watch run <watch_id>
 dra watch run <watch_id> --force
@@ -93,7 +96,8 @@ dra run "<task>" [--provider wikipedia_search] [--file PATH] [--url URL]
 dra inspect <run_id>
 dra runs
 dra providers
-dra export <run_id> --format html|markdown|manifest|findings|sources|entities|entities_csv|events|events_csv
+dra gate
+dra export <run_id> --format html|markdown|manifest|findings|sources|entities|entities_csv|events|events_csv|xlsx
 dra watch create "<name>" --task "<task>" --interval-minutes 60 [--file PATH] [--url URL]
 dra watch run <watch_id> [--force]
 dra watch run-all [--due-only/--all]

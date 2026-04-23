@@ -4,6 +4,8 @@ import csv
 import json
 from pathlib import Path
 
+from openpyxl import Workbook
+
 from research_operator.schemas import RunArtifacts, RunResult
 
 
@@ -19,6 +21,7 @@ def write_artifacts(result: RunResult, base_dir: Path) -> RunResult:
     report_path = run_dir / "research_report.md"
     findings_path = run_dir / "findings.json"
     html_report_path = run_dir / "research_report.html"
+    workbook_path = run_dir / "research_workbook.xlsx"
     source_ledger_path = run_dir / "source_ledger.json"
     entities_path = run_dir / "entities.json"
     entities_csv_path = run_dir / "entities.csv"
@@ -30,6 +33,7 @@ def write_artifacts(result: RunResult, base_dir: Path) -> RunResult:
         report_path=report_path,
         findings_path=findings_path,
         html_report_path=html_report_path,
+        workbook_path=workbook_path,
         source_ledger_path=source_ledger_path,
         entities_path=entities_path,
         entities_csv_path=entities_csv_path,
@@ -88,6 +92,7 @@ def write_artifacts(result: RunResult, base_dir: Path) -> RunResult:
             for item in result.events
         ],
     )
+    write_workbook(result, workbook_path)
     return result
 
 
@@ -99,15 +104,25 @@ def render_markdown_report(result: RunResult) -> str:
         "",
         result.task,
         "",
-        "## Plan",
+        "## Executive Summary",
         "",
     ]
+    lines.extend(render_executive_summary_lines(result))
+
+    lines.extend([
+        "",
+        "## Plan",
+        "",
+    ])
     for step in result.plan.steps:
         lines.append(f"- `{step.id}` {step.title}: {step.description}")
 
     lines.extend(["", "## Findings", ""])
     for finding in result.findings:
         lines.append(f"- **{finding.title}** ({finding.confidence}): {finding.detail}")
+
+    lines.extend(["", "## Key Evidence", ""])
+    lines.extend(render_key_evidence_lines(result))
 
     lines.extend(["", "## Sources", ""])
     if result.sources:
@@ -116,11 +131,18 @@ def render_markdown_report(result: RunResult) -> str:
     else:
         lines.append("- No explicit sources attached to this run.")
 
+    lines.extend(["", "## Citations", ""])
+    lines.extend(render_citation_lines(result))
+
+    lines.extend(["", "## Limitations", ""])
+    lines.extend(render_limitation_lines(result))
+
     lines.extend(["", "## Structured Outputs", ""])
     lines.append(f"- Entities: `{result.artifacts.entities_path}`")
     lines.append(f"- Entities CSV: `{result.artifacts.entities_csv_path}`")
     lines.append(f"- Events: `{result.artifacts.events_path}`")
     lines.append(f"- Events CSV: `{result.artifacts.events_csv_path}`")
+    lines.append(f"- Workbook: `{result.artifacts.workbook_path}`")
 
     return "\n".join(lines) + "\n"
 
@@ -144,6 +166,19 @@ def render_html_report(result: RunResult) -> str:
     )
     if not sources:
         sources = "<li>No explicit sources attached to this run.</li>"
+
+    executive_summary = "".join(
+        f"<li>{escape_html(item)}</li>" for item in render_executive_summary_lines(result)
+    )
+    evidence = "".join(
+        f"<li>{escape_html(item)}</li>" for item in render_key_evidence_lines(result)
+    )
+    citations = "".join(
+        f"<li>{escape_html(item)}</li>" for item in render_citation_lines(result)
+    )
+    limitations = "".join(
+        f"<li>{escape_html(item)}</li>" for item in render_limitation_lines(result)
+    )
 
     return f"""<!doctype html>
 <html lang="en">
@@ -179,6 +214,10 @@ def render_html_report(result: RunResult) -> str:
         <p>Run ID: <code>{escape_html(result.run_id)}</code></p>
         <p>Created at: <code>{escape_html(str(result.created_at))}</code></p>
       </section>
+      <section class="card" style="margin-top: 24px;">
+        <h2>Executive Summary</h2>
+        <ul>{executive_summary}</ul>
+      </section>
       <section class="grid">
         <article class="card">
           <h2>Plan</h2>
@@ -202,8 +241,20 @@ def render_html_report(result: RunResult) -> str:
         </article>
       </section>
       <section class="card" style="margin-top: 24px;">
+        <h2>Key Evidence</h2>
+        <ul>{evidence}</ul>
+      </section>
+      <section class="card" style="margin-top: 24px;">
         <h2>Sources</h2>
         <ul>{sources}</ul>
+      </section>
+      <section class="card" style="margin-top: 24px;">
+        <h2>Citations</h2>
+        <ul>{citations}</ul>
+      </section>
+      <section class="card" style="margin-top: 24px;">
+        <h2>Limitations</h2>
+        <ul>{limitations}</ul>
       </section>
     </main>
   </body>
@@ -226,3 +277,107 @@ def write_csv(path: Path, fieldnames: list[str], rows: list[dict[str, str]]) -> 
         writer.writeheader()
         for row in rows:
             writer.writerow(row)
+
+
+def write_workbook(result: RunResult, path: Path) -> None:
+    workbook = Workbook()
+
+    summary_sheet = workbook.active
+    summary_sheet.title = "summary"
+    summary_sheet.append(["run_id", result.run_id])
+    summary_sheet.append(["task", result.task])
+    summary_sheet.append(["source_count", len(result.sources)])
+    summary_sheet.append(["entity_count", len(result.entities)])
+    summary_sheet.append(["event_count", len(result.events)])
+
+    findings_sheet = workbook.create_sheet("findings")
+    findings_sheet.append(["title", "detail", "confidence"])
+    for item in result.findings:
+        findings_sheet.append([item.title, item.detail, item.confidence])
+
+    sources_sheet = workbook.create_sheet("sources")
+    sources_sheet.append(["label", "kind", "locator", "excerpt", "content_chars", "provider"])
+    for item in result.sources:
+        sources_sheet.append(
+            [
+                item.label,
+                item.kind,
+                item.locator,
+                item.excerpt,
+                item.content_chars,
+                item.provider.value,
+            ]
+        )
+
+    entities_sheet = workbook.create_sheet("entities")
+    entities_sheet.append(["entity", "category", "source_label", "source_locator"])
+    for item in result.entities:
+        entities_sheet.append([item.entity, item.category, item.source_label, item.source_locator])
+
+    events_sheet = workbook.create_sheet("events")
+    events_sheet.append(["event_type", "subject", "amount", "event_date", "source_label", "source_locator", "evidence"])
+    for item in result.events:
+        events_sheet.append(
+            [
+                item.event_type,
+                item.subject,
+                item.amount,
+                item.event_date,
+                item.source_label,
+                item.source_locator,
+                item.evidence,
+            ]
+        )
+
+    workbook.save(path)
+
+
+def render_executive_summary_lines(result: RunResult) -> list[str]:
+    lines = [
+        f"This run analyzed {len(result.sources)} source(s) and produced {len(result.findings)} top-level findings.",
+        f"Structured extraction yielded {len(result.entities)} entities and {len(result.events)} events.",
+    ]
+    if result.events:
+        first_event = result.events[0]
+        lines.append(
+            f"Top event signal: {first_event.event_type} involving {first_event.subject} "
+            f"{'for ' + first_event.amount if first_event.amount else ''}".strip()
+        )
+    elif result.sources:
+        lines.append(f"Primary evidence source: {result.sources[0].label}.")
+    return lines
+
+
+def render_key_evidence_lines(result: RunResult) -> list[str]:
+    if result.events:
+        return [
+            f"{item.subject} | {item.event_type} | {item.amount or 'n/a'} | {item.event_date or 'n/a'} | {item.source_label}"
+            for item in result.events[:5]
+        ]
+    if result.sources:
+        return [
+            f"{source.label} | {source.locator} | {source.excerpt}"
+            for source in result.sources[:5]
+        ]
+    return ["No evidence sources attached."]
+
+
+def render_citation_lines(result: RunResult) -> list[str]:
+    if not result.sources:
+        return ["No citations available."]
+    return [
+        f"{source.label} | {source.locator} | excerpt: {source.excerpt or 'n/a'}"
+        for source in result.sources[:10]
+    ]
+
+
+def render_limitation_lines(result: RunResult) -> list[str]:
+    limitations = [
+        "This version relies on lightweight extraction and may miss nuanced entity relations.",
+        "Confidence is driven by source availability and simple normalization rather than deep verification.",
+    ]
+    if not result.sources:
+        limitations.append("No external evidence sources were attached or discovered for this run.")
+    if len(result.sources) < 2:
+        limitations.append("Source diversity is limited; conclusions should be treated as preliminary.")
+    return limitations

@@ -378,6 +378,30 @@ def test_runs_lists_history(tmp_path):
     assert {item["task"] for item in payload} == {"任务一", "任务二"}
 
 
+def test_quality_command_reads_quality_artifact(tmp_path):
+    source_file = tmp_path / "quality.txt"
+    source_file.write_text("2026年4月20日，星海机器人公司完成2亿元人民币融资。", encoding="utf-8")
+    run_result = runner.invoke(
+        app,
+        [
+            "run",
+            "读取质量评分",
+            "--file",
+            str(source_file),
+            "--artifacts-dir",
+            str(tmp_path),
+            "--json",
+        ],
+    )
+    assert run_result.exit_code == 0
+    run_id = json.loads(run_result.stdout)["run_id"]
+    quality_result = runner.invoke(app, ["quality", run_id, "--artifacts-dir", str(tmp_path)])
+    assert quality_result.exit_code == 0
+    payload = json.loads(quality_result.stdout)
+    assert payload["score"] > 0
+    assert payload["source_count"] == 1
+
+
 def test_watch_create_and_run_detects_changes(tmp_path):
     watch_file = tmp_path / "watched.txt"
     watch_file.write_text("版本一", encoding="utf-8")

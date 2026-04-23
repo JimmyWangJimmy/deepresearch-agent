@@ -47,6 +47,7 @@ dra run "分析某网页并生成证据化报告" --url https://example.com
 dra run "robotics industry overview" --provider wikipedia_search
 OPENAI_API_KEY=... dra run "机器人行业融资研究" --provider openai_web_research
 dra inspect <run_id>
+dra quality <run_id>
 dra runs
 dra providers
 dra gate
@@ -104,6 +105,7 @@ Every run must produce:
 ```bash
 dra run "<task>" [--provider wikipedia_search|arxiv_search|openai_web_research] [--file PATH] [--url URL]
 dra inspect <run_id>
+dra quality <run_id>
 dra runs
 dra providers
 dra gate

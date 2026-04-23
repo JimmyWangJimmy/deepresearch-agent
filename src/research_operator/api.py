@@ -79,6 +79,15 @@ def get_run_deliverables(run_id: str, artifacts_dir: str = "artifacts") -> dict:
     return {"run_id": run_id, "deliverables": deliverables}
 
 
+@app.get("/runs/{run_id}/quality")
+def get_run_quality(run_id: str, artifacts_dir: str = "artifacts") -> dict:
+    run_dir = require_run_dir(run_id, artifacts_dir)
+    quality_path = run_dir / "quality.json"
+    if not quality_path.exists():
+        raise HTTPException(status_code=404, detail=f"Quality not found for run: {run_id}")
+    return json.loads(quality_path.read_text(encoding="utf-8"))
+
+
 @app.get("/runs/{run_id}/deliverables/{artifact_name}")
 def download_run_deliverable(run_id: str, artifact_name: str, artifacts_dir: str = "artifacts") -> FileResponse:
     run_dir = require_run_dir(run_id, artifacts_dir)

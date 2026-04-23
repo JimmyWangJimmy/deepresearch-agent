@@ -162,6 +162,21 @@ def runs(
 
 
 @app.command()
+def quality(
+    run_id: str = typer.Argument(..., help="Run identifier to inspect quality for."),
+    artifacts_dir: Path = typer.Option(
+        AppConfig().artifacts_dir,
+        "--artifacts-dir",
+        help="Directory that stores run artifacts.",
+    ),
+) -> None:
+    quality_path = artifacts_dir / run_id / "quality.json"
+    if not quality_path.exists():
+        raise typer.BadParameter(f"Quality artifact not found: {quality_path}")
+    typer.echo(quality_path.read_text(encoding="utf-8"))
+
+
+@app.command()
 def export(
     run_id: str = typer.Argument(..., help="Run identifier to export."),
     format: str = typer.Option(..., "--format", help="Export format: html, markdown, manifest, findings, sources, entities, entities_csv, events, events_csv, xlsx, chart, timeline_chart, pdf, bundle."),

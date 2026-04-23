@@ -61,6 +61,10 @@ def test_create_and_fetch_run_via_api(tmp_path):
     assert bundle.status_code == 200
     assert bundle.content.startswith(b"PK")
 
+    quality = client.get(f"/runs/{run_id}/quality", params={"artifacts_dir": str(tmp_path)})
+    assert quality.status_code == 200
+    assert quality.json()["score"] > 0
+
 
 def test_api_reports_provider_configuration_errors(tmp_path, monkeypatch):
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)

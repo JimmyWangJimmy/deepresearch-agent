@@ -82,6 +82,7 @@ class SourceRecord(BaseModel):
     excerpt: str = ""
     content_chars: int = 0
     provider: ProviderKind = ProviderKind.ATTACHED
+    evidence_score: float = 0.0
 
 
 class CollectedSource(BaseModel):

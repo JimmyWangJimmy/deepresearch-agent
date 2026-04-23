@@ -127,7 +127,10 @@ def render_markdown_report(result: RunResult) -> str:
     lines.extend(["", "## Sources", ""])
     if result.sources:
         for source in result.sources:
-            lines.append(f"- `{source.kind}` {source.label}: {source.locator}")
+            lines.append(
+                f"- `{source.kind}` {source.label}: {source.locator} "
+                f"(score={source.evidence_score})"
+            )
     else:
         lines.append("- No explicit sources attached to this run.")
 
@@ -296,7 +299,7 @@ def write_workbook(result: RunResult, path: Path) -> None:
         findings_sheet.append([item.title, item.detail, item.confidence])
 
     sources_sheet = workbook.create_sheet("sources")
-    sources_sheet.append(["label", "kind", "locator", "excerpt", "content_chars", "provider"])
+    sources_sheet.append(["label", "kind", "locator", "excerpt", "content_chars", "provider", "evidence_score"])
     for item in result.sources:
         sources_sheet.append(
             [
@@ -306,6 +309,7 @@ def write_workbook(result: RunResult, path: Path) -> None:
                 item.excerpt,
                 item.content_chars,
                 item.provider.value,
+                item.evidence_score,
             ]
         )
 
@@ -366,7 +370,7 @@ def render_citation_lines(result: RunResult) -> list[str]:
     if not result.sources:
         return ["No citations available."]
     return [
-        f"{source.label} | {source.locator} | excerpt: {source.excerpt or 'n/a'}"
+        f"{source.label} | score={source.evidence_score} | {source.locator} | excerpt: {source.excerpt or 'n/a'}"
         for source in result.sources[:10]
     ]
 

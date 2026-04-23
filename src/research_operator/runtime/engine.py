@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from research_operator.schemas import ProviderKind, RunResult
-from research_operator.runtime.analyzer import generate_findings
+from research_operator.runtime.analyzer import generate_findings, score_sources
 from research_operator.runtime.artifacts import write_artifacts
 from research_operator.runtime.extraction import extract_entities, extract_events
 from research_operator.runtime.fusion import fuse_entities, fuse_events, fuse_sources
@@ -28,6 +28,7 @@ def execute_task(
     collected = fuse_sources(collected)
     entities = fuse_entities(extract_entities(collected))
     events = fuse_events(extract_events(collected))
+    collected = score_sources(collected, entities, events)
     findings = generate_findings(task, plan, collected, entities, events)
     result = RunResult(
         task=task,

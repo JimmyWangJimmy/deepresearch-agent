@@ -41,6 +41,7 @@ def test_run_creates_artifacts(tmp_path):
     assert (tmp_path / run_id / "events.json").exists()
     assert (tmp_path / run_id / "events.csv").exists()
     assert payload["sources"][0]["label"] == "input.txt"
+    assert "evidence_score" in payload["sources"][0]
     assert payload["entities"]
     assert payload["events"]
 
@@ -585,6 +586,54 @@ def test_markdown_report_contains_customer_sections(tmp_path):
     assert "## Key Evidence" in report
     assert "## Citations" in report
     assert "## Limitations" in report
+
+
+def test_source_scores_are_ranked(tmp_path, monkeypatch):
+    from research_operator.runtime.provider_registry import WikipediaSearchProvider
+
+    def fake_collect_query(self, query: str):
+        return [
+            CollectedSource(
+                record=SourceRecord(
+                    label="Weak Source",
+                    kind="search_result",
+                    locator="https://example.com/weak",
+                    excerpt="Short",
+                    content_chars=5,
+                    provider=ProviderKind.WIKIPEDIA_SEARCH,
+                ),
+                content="Short",
+            ),
+            CollectedSource(
+                record=SourceRecord(
+                    label="Strong Source",
+                    kind="search_result",
+                    locator="https://example.com/strong",
+                    excerpt="2026年4月20日，星海机器人公司完成2亿元人民币融资。",
+                    content_chars=32,
+                    provider=ProviderKind.WIKIPEDIA_SEARCH,
+                ),
+                content="2026年4月20日，星海机器人公司完成2亿元人民币融资。",
+            ),
+        ]
+
+    monkeypatch.setattr(WikipediaSearchProvider, "collect_query", fake_collect_query)
+    result = runner.invoke(
+        app,
+        [
+            "run",
+            "robotics financing",
+            "--provider",
+            "wikipedia_search",
+            "--artifacts-dir",
+            str(tmp_path),
+            "--json",
+        ],
+    )
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["sources"][0]["label"] == "Strong Source"
+    assert payload["sources"][0]["evidence_score"] >= payload["sources"][1]["evidence_score"]
 
 
 def test_fusion_collapses_duplicate_sources_and_records():

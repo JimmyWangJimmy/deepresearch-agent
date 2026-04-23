@@ -146,3 +146,28 @@ def generate_findings(
             )
         )
     return base
+
+
+def score_sources(
+    collected: list[CollectedSource],
+    entities: list[ExtractedEntity],
+    events: list[ExtractedEvent],
+) -> list[CollectedSource]:
+    entity_count_by_locator: dict[str, int] = {}
+    for item in entities:
+        entity_count_by_locator[item.source_locator] = entity_count_by_locator.get(item.source_locator, 0) + 1
+
+    event_count_by_locator: dict[str, int] = {}
+    for item in events:
+        event_count_by_locator[item.source_locator] = event_count_by_locator.get(item.source_locator, 0) + 1
+
+    for source in collected:
+        score = 0.0
+        score += min(source.record.content_chars / 400.0, 1.0)
+        score += entity_count_by_locator.get(source.record.locator, 0) * 0.2
+        score += event_count_by_locator.get(source.record.locator, 0) * 0.4
+        if source.record.provider.value in {"wikipedia_search", "arxiv_search"}:
+            score += 0.2
+        source.record.evidence_score = round(score, 2)
+
+    return sorted(collected, key=lambda item: item.record.evidence_score, reverse=True)

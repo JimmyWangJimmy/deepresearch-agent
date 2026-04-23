@@ -124,6 +124,10 @@ class WatchSpec(BaseModel):
     task: str
     created_at: datetime = Field(default_factory=utc_now)
     sources: list[WatchSource]
+    interval_minutes: int = 60
+    enabled: bool = True
+    last_run_at: datetime | None = None
+    next_run_at: datetime | None = None
 
 
 class WatchSourceState(BaseModel):
@@ -139,3 +143,4 @@ class WatchExecution(BaseModel):
     changed_sources: list[WatchSourceState] = Field(default_factory=list)
     unchanged_sources: list[WatchSourceState] = Field(default_factory=list)
     new_run_id: str | None = None
+    skipped_reason: str | None = None

@@ -5,5 +5,7 @@ __pycache__/
 artifacts/
 artifacts_demo/
 demo/
+.dra_sched/
+.dra_test/
 tmp_artifacts/
 tmp_artifacts_*/

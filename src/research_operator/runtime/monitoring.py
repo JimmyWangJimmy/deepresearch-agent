@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from research_operator.config import AppConfig
@@ -50,8 +51,14 @@ def execute_watch(
     watch_id: str,
     artifacts_dir: Path,
     watches_dir: Path | None = None,
+    force: bool = False,
 ) -> WatchExecution:
     spec = load_watch(watch_id, watches_dir)
+    if not spec.enabled:
+        return WatchExecution(watch_id=spec.watch_id, skipped_reason="watch_disabled")
+    if not force and not is_watch_due(spec):
+        return WatchExecution(watch_id=spec.watch_id, skipped_reason="watch_not_due")
+
     watch_dir = ensure_watches_dir(watches_dir) / spec.watch_id
     state_path = watch_dir / "state.json"
     prior_state = load_watch_state(state_path)
@@ -104,6 +111,9 @@ def execute_watch(
     )
     digest_path = watch_dir / "last_digest.md"
     digest_path.write_text(render_watch_digest(spec, execution), encoding="utf-8")
+    spec.last_run_at = execution.executed_at
+    spec.next_run_at = execution.executed_at + timedelta(minutes=spec.interval_minutes)
+    save_watch(spec, watches_dir)
     return execution
 
 
@@ -123,6 +133,18 @@ def build_watch_sources(urls: list[str] | None = None, files: list[Path] | None 
     return sources
 
 
+def is_watch_due(spec: WatchSpec) -> bool:
+    if not spec.enabled:
+        return False
+    if spec.next_run_at is None:
+        return True
+    return spec.next_run_at <= datetime.now(UTC)
+
+
+def list_due_watches(watches_dir: Path | None = None) -> list[WatchSpec]:
+    return [spec for spec in list_watches(watches_dir) if is_watch_due(spec)]
+
+
 def render_watch_digest(spec: WatchSpec, execution: WatchExecution) -> str:
     lines = [
         f"# Watch {spec.name}",
@@ -131,6 +153,9 @@ def render_watch_digest(spec: WatchSpec, execution: WatchExecution) -> str:
         f"- Task: {spec.task}",
         f"- Executed at: `{execution.executed_at}`",
         f"- New run ID: `{execution.new_run_id or 'none'}`",
+        f"- Skipped reason: `{execution.skipped_reason or 'none'}`",
+        f"- Interval minutes: `{spec.interval_minutes}`",
+        f"- Next run at: `{spec.next_run_at or 'pending'}`",
         "",
         "## Changed Sources",
         "",

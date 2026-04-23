@@ -186,6 +186,8 @@ def test_watch_create_and_run_detects_changes(tmp_path):
             "机器人监控",
             "--task",
             "监控机器人赛道变化并生成摘要",
+            "--interval-minutes",
+            "30",
             "--file",
             str(watch_file),
             "--watches-dir",
@@ -226,8 +228,7 @@ def test_watch_create_and_run_detects_changes(tmp_path):
     )
     assert second_run.exit_code == 0
     second_payload = json.loads(second_run.stdout)
-    assert len(second_payload["changed_sources"]) == 0
-    assert second_payload["new_run_id"] is None
+    assert second_payload["skipped_reason"] == "watch_not_due"
 
     watch_file.write_text("版本二，新增融资披露", encoding="utf-8")
     third_run = runner.invoke(
@@ -236,6 +237,7 @@ def test_watch_create_and_run_detects_changes(tmp_path):
             "watch",
             "run",
             created["watch_id"],
+            "--force",
             "--watches-dir",
             str(tmp_path / "watches"),
             "--artifacts-dir",
@@ -273,6 +275,8 @@ def test_watch_run_all_executes_multiple_specs(tmp_path):
             "Watch A",
             "--task",
             "监控甲公司",
+            "--interval-minutes",
+            "15",
             "--file",
             str(first_file),
             "--watches-dir",
@@ -287,6 +291,8 @@ def test_watch_run_all_executes_multiple_specs(tmp_path):
             "Watch B",
             "--task",
             "监控乙公司",
+            "--interval-minutes",
+            "15",
             "--file",
             str(second_file),
             "--watches-dir",
@@ -301,6 +307,7 @@ def test_watch_run_all_executes_multiple_specs(tmp_path):
         [
             "watch",
             "run-all",
+            "--all",
             "--watches-dir",
             str(tmp_path / "watches"),
             "--artifacts-dir",
@@ -312,3 +319,52 @@ def test_watch_run_all_executes_multiple_specs(tmp_path):
     payload = json.loads(result.stdout)
     assert len(payload) == 2
     assert all(item["new_run_id"] for item in payload)
+
+
+def test_watch_list_due_only_filters_not_due(tmp_path):
+    watch_file = tmp_path / "watch.txt"
+    watch_file.write_text("初始版本", encoding="utf-8")
+    create = runner.invoke(
+        app,
+        [
+            "watch",
+            "create",
+            "Due Watch",
+            "--task",
+            "监控变化",
+            "--interval-minutes",
+            "60",
+            "--file",
+            str(watch_file),
+            "--watches-dir",
+            str(tmp_path / "watches"),
+        ],
+    )
+    created = json.loads(create.stdout)
+    first_run = runner.invoke(
+        app,
+        [
+            "watch",
+            "run",
+            created["watch_id"],
+            "--watches-dir",
+            str(tmp_path / "watches"),
+            "--artifacts-dir",
+            str(tmp_path / "artifacts"),
+        ],
+    )
+    assert first_run.exit_code == 0
+
+    due_list = runner.invoke(
+        app,
+        [
+            "watch",
+            "list",
+            "--due-only",
+            "--watches-dir",
+            str(tmp_path / "watches"),
+            "--json",
+        ],
+    )
+    assert due_list.exit_code == 0
+    assert json.loads(due_list.stdout) == []

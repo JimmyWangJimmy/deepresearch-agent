@@ -43,8 +43,9 @@ dra runs
 dra providers
 dra export <run_id> --format html --output ./deliverables/report.html
 dra export <run_id> --format events_csv --output ./deliverables/events.csv
-dra watch create "OpenAI News" --task "监控OpenAI更新并生成摘要" --url https://openai.com/news/
+dra watch create "OpenAI News" --task "监控OpenAI更新并生成摘要" --interval-minutes 60 --url https://openai.com/news/
 dra watch run <watch_id>
+dra watch run <watch_id> --force
 dra watch run-all
 ```
 
@@ -91,10 +92,10 @@ dra inspect <run_id>
 dra runs
 dra providers
 dra export <run_id> --format html|markdown|manifest|findings|sources|entities|entities_csv|events|events_csv
-dra watch create "<name>" --task "<task>" [--file PATH] [--url URL]
-dra watch run <watch_id>
-dra watch run-all
-dra watch list
+dra watch create "<name>" --task "<task>" --interval-minutes 60 [--file PATH] [--url URL]
+dra watch run <watch_id> [--force]
+dra watch run-all [--due-only/--all]
+dra watch list [--due-only]
 ```
 
 That delivery contract is the base requirement for all future runtime integrations.

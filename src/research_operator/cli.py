@@ -14,6 +14,7 @@ from research_operator.runtime.engine import execute_task
 from research_operator.runtime.monitoring import (
     build_watch_sources,
     execute_watch,
+    list_due_watches,
     list_watches,
     save_watch,
 )
@@ -205,6 +206,12 @@ def providers(
 def watch_create(
     name: str = typer.Argument(..., help="Watch name."),
     task: str = typer.Option(..., "--task", help="Task to execute when sources change."),
+    interval_minutes: int = typer.Option(
+        60,
+        "--interval-minutes",
+        min=1,
+        help="Target execution interval in minutes.",
+    ),
     url: list[str] = typer.Option(
         None,
         "--url",
@@ -230,7 +237,7 @@ def watch_create(
     if not sources:
         raise typer.BadParameter("At least one --url or --file is required.")
 
-    spec = WatchSpec(name=name, task=task, sources=sources)
+    spec = WatchSpec(name=name, task=task, sources=sources, interval_minutes=interval_minutes)
     save_watch(spec, watches_dir)
     typer.echo(json.dumps(spec.model_dump(mode="json"), indent=2, ensure_ascii=False))
 
@@ -248,8 +255,13 @@ def watch_run(
         "--watches-dir",
         help="Directory where watch definitions are stored.",
     ),
+    force: bool = typer.Option(
+        False,
+        "--force",
+        help="Execute even if the watch is not due yet.",
+    ),
 ) -> None:
-    execution = execute_watch(watch_id, artifacts_dir=artifacts_dir, watches_dir=watches_dir)
+    execution = execute_watch(watch_id, artifacts_dir=artifacts_dir, watches_dir=watches_dir, force=force)
     typer.echo(json.dumps(execution.model_dump(mode="json"), indent=2, ensure_ascii=False))
 
 
@@ -265,10 +277,21 @@ def watch_run_all(
         "--watches-dir",
         help="Directory where watch definitions are stored.",
     ),
+    due_only: bool = typer.Option(
+        True,
+        "--due-only/--all",
+        help="Only execute watches that are due.",
+    ),
+    force: bool = typer.Option(
+        False,
+        "--force",
+        help="Force execution regardless of due time.",
+    ),
 ) -> None:
+    specs = list_due_watches(watches_dir) if due_only and not force else list_watches(watches_dir)
     payload = [
-        execute_watch(spec.watch_id, artifacts_dir=artifacts_dir, watches_dir=watches_dir).model_dump(mode="json")
-        for spec in list_watches(watches_dir)
+        execute_watch(spec.watch_id, artifacts_dir=artifacts_dir, watches_dir=watches_dir, force=force).model_dump(mode="json")
+        for spec in specs
     ]
     typer.echo(json.dumps(payload, indent=2, ensure_ascii=False))
 
@@ -285,8 +308,13 @@ def watch_list(
         "--json",
         help="Print watches as JSON.",
     ),
+    due_only: bool = typer.Option(
+        False,
+        "--due-only",
+        help="Only list watches that are due.",
+    ),
 ) -> None:
-    specs = list_watches(watches_dir)
+    specs = list_due_watches(watches_dir) if due_only else list_watches(watches_dir)
     if json_output:
         typer.echo(json.dumps([spec.model_dump(mode="json") for spec in specs], indent=2, ensure_ascii=False))
         return
@@ -295,9 +323,18 @@ def watch_list(
     table.add_column("Watch ID")
     table.add_column("Name")
     table.add_column("Sources")
+    table.add_column("Interval")
+    table.add_column("Next Run")
     table.add_column("Task")
     for spec in specs:
-        table.add_row(spec.watch_id, spec.name, str(len(spec.sources)), spec.task)
+        table.add_row(
+            spec.watch_id,
+            spec.name,
+            str(len(spec.sources)),
+            str(spec.interval_minutes),
+            str(spec.next_run_at or "pending"),
+            spec.task,
+        )
     console.print(table)
 
 

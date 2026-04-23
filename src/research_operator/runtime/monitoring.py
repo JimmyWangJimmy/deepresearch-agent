@@ -96,9 +96,11 @@ def execute_watch(
                 files.append(Path(source.locator))
 
     new_run_id: str | None = None
+    deliverables: dict[str, str] = {}
     if changed:
         result = execute_task(spec.task, artifacts_dir, urls=urls, files=files)
         new_run_id = result.run_id
+        deliverables = build_run_deliverables(result)
 
     execution = WatchExecution(
         watch_id=spec.watch_id,
@@ -120,7 +122,7 @@ def execute_watch(
     notification_title = f"Watch {spec.name} execution"
     notification_body = render_notification_body(spec, execution)
     write_notification(watch_dir, title=notification_title, body=notification_body)
-    payload = build_notification_payload(notification_title, notification_body)
+    payload = build_notification_payload(notification_title, notification_body, deliverables=deliverables)
     write_notification_json(watch_dir, payload)
     if spec.webhook_url:
         post_webhook(spec.webhook_url, payload)
@@ -200,3 +202,22 @@ def render_notification_body(spec: WatchSpec, execution: WatchExecution) -> str:
         f"unchanged_sources={len(execution.unchanged_sources)}\n"
         f"skipped_reason={execution.skipped_reason or 'none'}"
     )
+
+
+def build_run_deliverables(result) -> dict[str, str]:
+    if result.artifacts is None:
+        return {}
+    return {
+        "manifest": str(result.artifacts.manifest_path),
+        "markdown_report": str(result.artifacts.report_path),
+        "html_report": str(result.artifacts.html_report_path),
+        "pdf_report": str(result.artifacts.pdf_report_path),
+        "workbook": str(result.artifacts.workbook_path),
+        "source_score_chart": str(result.artifacts.chart_path),
+        "event_timeline_chart": str(result.artifacts.timeline_chart_path),
+        "source_ledger": str(result.artifacts.source_ledger_path),
+        "entities_json": str(result.artifacts.entities_path),
+        "entities_csv": str(result.artifacts.entities_csv_path),
+        "events_json": str(result.artifacts.events_path),
+        "events_csv": str(result.artifacts.events_csv_path),
+    }

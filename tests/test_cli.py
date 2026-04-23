@@ -411,7 +411,12 @@ def test_watch_create_and_run_detects_changes(tmp_path):
     assert "new_run_id=" in notification_path.read_text(encoding="utf-8")
     notification_json = tmp_path / "watches" / created["watch_id"] / "notification.json"
     assert notification_json.exists()
-    assert json.loads(notification_json.read_text(encoding="utf-8"))["title"]
+    notification_payload = json.loads(notification_json.read_text(encoding="utf-8"))
+    assert notification_payload["title"]
+    assert notification_payload["deliverables"]["pdf_report"].endswith("research_report.pdf")
+    assert notification_payload["deliverables"]["workbook"].endswith("research_workbook.xlsx")
+    assert notification_payload["deliverables"]["source_score_chart"].endswith("source_scores.svg")
+    assert notification_payload["deliverables"]["event_timeline_chart"].endswith("event_timeline.svg")
 
 
 def test_providers_lists_available_backends():

@@ -19,12 +19,19 @@ def post_webhook(url: str, payload: dict) -> None:
         response.raise_for_status()
 
 
-def build_notification_payload(title: str, body: str) -> dict[str, str]:
-    return {
+def build_notification_payload(
+    title: str,
+    body: str,
+    deliverables: dict[str, str] | None = None,
+) -> dict:
+    payload = {
         "title": title,
         "body": body,
         "format": "plain_text",
     }
+    if deliverables:
+        payload["deliverables"] = deliverables
+    return payload
 
 
 def write_notification_json(target_dir: Path, payload: dict) -> Path:

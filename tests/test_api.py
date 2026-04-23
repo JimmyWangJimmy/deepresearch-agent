@@ -45,3 +45,17 @@ def test_create_and_fetch_run_via_api(tmp_path):
     detail = client.get(f"/runs/{run_id}", params={"artifacts_dir": str(tmp_path)})
     assert detail.status_code == 200
     assert detail.json()["run_id"] == run_id
+
+    deliverables = client.get(f"/runs/{run_id}/deliverables", params={"artifacts_dir": str(tmp_path)})
+    assert deliverables.status_code == 200
+    delivery_payload = deliverables.json()
+    assert delivery_payload["deliverables"]["pdf_report"]["exists"]
+    assert delivery_payload["deliverables"]["delivery_bundle"]["exists"]
+    assert delivery_payload["deliverables"]["source_score_chart"]["size_bytes"] > 0
+
+    bundle = client.get(
+        f"/runs/{run_id}/deliverables/delivery_bundle",
+        params={"artifacts_dir": str(tmp_path)},
+    )
+    assert bundle.status_code == 200
+    assert bundle.content.startswith(b"PK")

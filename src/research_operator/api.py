@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from research_operator.runtime.engine import execute_task
@@ -61,6 +62,32 @@ def get_run(run_id: str, artifacts_dir: str = "artifacts") -> dict:
     return json.loads(manifest_path.read_text(encoding="utf-8"))
 
 
+@app.get("/runs/{run_id}/deliverables")
+def get_run_deliverables(run_id: str, artifacts_dir: str = "artifacts") -> dict:
+    run_dir = require_run_dir(run_id, artifacts_dir)
+    deliverables = {
+        name: {
+            "path": str(path),
+            "exists": path.exists(),
+            "size_bytes": path.stat().st_size if path.exists() else 0,
+        }
+        for name, path in artifact_mapping(run_dir).items()
+    }
+    return {"run_id": run_id, "deliverables": deliverables}
+
+
+@app.get("/runs/{run_id}/deliverables/{artifact_name}")
+def download_run_deliverable(run_id: str, artifact_name: str, artifacts_dir: str = "artifacts") -> FileResponse:
+    run_dir = require_run_dir(run_id, artifacts_dir)
+    mapping = artifact_mapping(run_dir)
+    if artifact_name not in mapping:
+        raise HTTPException(status_code=404, detail=f"Unknown deliverable: {artifact_name}")
+    path = mapping[artifact_name]
+    if not path.exists():
+        raise HTTPException(status_code=404, detail=f"Deliverable not found: {artifact_name}")
+    return FileResponse(path, filename=path.name)
+
+
 @app.get("/gate")
 def gate() -> dict:
     report = run_release_gate(Path.cwd())
@@ -74,4 +101,30 @@ def gate() -> dict:
             }
             for item in report.checks
         ],
+    }
+
+
+def require_run_dir(run_id: str, artifacts_dir: str) -> Path:
+    run_dir = Path(artifacts_dir) / run_id
+    if not (run_dir / "run_manifest.json").exists():
+        raise HTTPException(status_code=404, detail=f"Run not found: {run_id}")
+    return run_dir
+
+
+def artifact_mapping(run_dir: Path) -> dict[str, Path]:
+    return {
+        "manifest": run_dir / "run_manifest.json",
+        "markdown_report": run_dir / "research_report.md",
+        "html_report": run_dir / "research_report.html",
+        "pdf_report": run_dir / "research_report.pdf",
+        "workbook": run_dir / "research_workbook.xlsx",
+        "delivery_bundle": run_dir / "delivery_bundle.zip",
+        "source_score_chart": run_dir / "source_scores.svg",
+        "event_timeline_chart": run_dir / "event_timeline.svg",
+        "findings": run_dir / "findings.json",
+        "source_ledger": run_dir / "source_ledger.json",
+        "entities_json": run_dir / "entities.json",
+        "entities_csv": run_dir / "entities.csv",
+        "events_json": run_dir / "events.json",
+        "events_csv": run_dir / "events.csv",
     }

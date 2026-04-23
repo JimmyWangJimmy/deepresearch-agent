@@ -5,6 +5,9 @@ import json
 from pathlib import Path
 
 from openpyxl import Workbook
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfbase.pdfmetrics import stringWidth
+from reportlab.pdfgen import canvas
 
 from research_operator.schemas import RunArtifacts, RunResult
 
@@ -21,6 +24,7 @@ def write_artifacts(result: RunResult, base_dir: Path) -> RunResult:
     report_path = run_dir / "research_report.md"
     findings_path = run_dir / "findings.json"
     html_report_path = run_dir / "research_report.html"
+    pdf_report_path = run_dir / "research_report.pdf"
     workbook_path = run_dir / "research_workbook.xlsx"
     chart_path = run_dir / "source_scores.svg"
     timeline_chart_path = run_dir / "event_timeline.svg"
@@ -35,6 +39,7 @@ def write_artifacts(result: RunResult, base_dir: Path) -> RunResult:
         report_path=report_path,
         findings_path=findings_path,
         html_report_path=html_report_path,
+        pdf_report_path=pdf_report_path,
         workbook_path=workbook_path,
         chart_path=chart_path,
         timeline_chart_path=timeline_chart_path,
@@ -51,6 +56,7 @@ def write_artifacts(result: RunResult, base_dir: Path) -> RunResult:
     )
     report_path.write_text(render_markdown_report(result), encoding="utf-8")
     html_report_path.write_text(render_html_report(result), encoding="utf-8")
+    write_pdf_report(result, pdf_report_path)
     findings_path.write_text(
         json.dumps([item.model_dump(mode="json") for item in result.findings], indent=2, ensure_ascii=False),
         encoding="utf-8",
@@ -152,6 +158,7 @@ def render_markdown_report(result: RunResult) -> str:
     lines.append(f"- Events: `{result.artifacts.events_path}`")
     lines.append(f"- Events CSV: `{result.artifacts.events_csv_path}`")
     lines.append(f"- Workbook: `{result.artifacts.workbook_path}`")
+    lines.append(f"- PDF Report: `{result.artifacts.pdf_report_path}`")
     lines.append(f"- Source Score Chart: `{result.artifacts.chart_path}`")
     lines.append(f"- Event Timeline Chart: `{result.artifacts.timeline_chart_path}`")
 
@@ -350,6 +357,79 @@ def write_workbook(result: RunResult, path: Path) -> None:
         )
 
     workbook.save(path)
+
+
+def write_pdf_report(result: RunResult, path: Path) -> None:
+    pdf = canvas.Canvas(str(path), pagesize=A4)
+    width, height = A4
+    margin_x = 48
+    y = height - 54
+
+    def new_page() -> None:
+        nonlocal y
+        pdf.showPage()
+        y = height - 54
+
+    def write_line(text: str, font_name: str = "Helvetica", font_size: int = 11) -> None:
+        nonlocal y
+        if y < 60:
+            new_page()
+        pdf.setFont(font_name, font_size)
+        safe_text = text.encode("latin-1", "replace").decode("latin-1")
+        pdf.drawString(margin_x, y, safe_text)
+        y -= font_size + 6
+
+    def write_wrapped(text: str, font_name: str = "Helvetica", font_size: int = 11) -> None:
+        words = text.split()
+        if not words:
+            write_line("", font_name, font_size)
+            return
+        line = ""
+        max_width = width - margin_x * 2
+        for word in words:
+            candidate = word if not line else f"{line} {word}"
+            candidate_width = stringWidth(candidate.encode("latin-1", "replace").decode("latin-1"), font_name, font_size)
+            if candidate_width <= max_width:
+                line = candidate
+            else:
+                write_line(line, font_name, font_size)
+                line = word
+        if line:
+            write_line(line, font_name, font_size)
+
+    write_line("DeepResearch Agent Report", "Helvetica-Bold", 18)
+    write_line(f"Run ID: {result.run_id}", "Helvetica", 10)
+    write_line(f"Task: {result.task}", "Helvetica", 10)
+    write_line("", "Helvetica", 4)
+
+    write_line("Executive Summary", "Helvetica-Bold", 14)
+    for item in render_executive_summary_lines(result):
+        write_wrapped(f"- {item}")
+
+    write_line("", "Helvetica", 4)
+    write_line("Key Findings", "Helvetica-Bold", 14)
+    for item in result.findings[:8]:
+        write_wrapped(f"- {item.title} ({item.confidence}): {item.detail}")
+
+    write_line("", "Helvetica", 4)
+    write_line("Key Evidence", "Helvetica-Bold", 14)
+    for item in render_key_evidence_lines(result):
+        write_wrapped(f"- {item}")
+
+    write_line("", "Helvetica", 4)
+    write_line("Top Citations", "Helvetica-Bold", 14)
+    for item in render_citation_lines(result)[:5]:
+        write_wrapped(f"- {item}")
+
+    write_line("", "Helvetica", 4)
+    write_line("Structured Outputs", "Helvetica-Bold", 14)
+    write_wrapped(f"- Entities CSV: {result.artifacts.entities_csv_path}")
+    write_wrapped(f"- Events CSV: {result.artifacts.events_csv_path}")
+    write_wrapped(f"- Workbook: {result.artifacts.workbook_path}")
+    write_wrapped(f"- Source Chart: {result.artifacts.chart_path}")
+    write_wrapped(f"- Timeline Chart: {result.artifacts.timeline_chart_path}")
+
+    pdf.save()
 
 
 def render_source_score_chart(result: RunResult) -> str:

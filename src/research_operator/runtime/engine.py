@@ -45,4 +45,10 @@ def execute_task(
 def result_outputs():
     from research_operator.schemas import OutputFormat
 
-    return [OutputFormat.MARKDOWN, OutputFormat.JSON, OutputFormat.HTML, OutputFormat.XLSX]
+    return [
+        OutputFormat.MARKDOWN,
+        OutputFormat.JSON,
+        OutputFormat.HTML,
+        OutputFormat.PDF,
+        OutputFormat.XLSX,
+    ]

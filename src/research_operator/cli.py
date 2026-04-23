@@ -85,6 +85,7 @@ def run(
     summary.add_row("Task Type", result.plan.task_type.value)
     summary.add_row("Report", str(result.artifacts.report_path))
     summary.add_row("HTML", str(result.artifacts.html_report_path))
+    summary.add_row("PDF", str(result.artifacts.pdf_report_path))
     summary.add_row("Workbook", str(result.artifacts.workbook_path))
     summary.add_row("Chart", str(result.artifacts.chart_path))
     summary.add_row("Timeline", str(result.artifacts.timeline_chart_path))
@@ -158,7 +159,7 @@ def runs(
 @app.command()
 def export(
     run_id: str = typer.Argument(..., help="Run identifier to export."),
-    format: str = typer.Option(..., "--format", help="Export format: html, markdown, manifest, findings, sources, entities, entities_csv, events, events_csv, xlsx, chart, timeline_chart."),
+    format: str = typer.Option(..., "--format", help="Export format: html, markdown, manifest, findings, sources, entities, entities_csv, events, events_csv, xlsx, chart, timeline_chart, pdf."),
     artifacts_dir: Path = typer.Option(
         AppConfig().artifacts_dir,
         "--artifacts-dir",
@@ -173,6 +174,7 @@ def export(
     run_dir = artifacts_dir / run_id
     mapping = {
         "html": run_dir / "research_report.html",
+        "pdf": run_dir / "research_report.pdf",
         "markdown": run_dir / "research_report.md",
         "manifest": run_dir / "run_manifest.json",
         "findings": run_dir / "findings.json",

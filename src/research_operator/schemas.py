@@ -28,6 +28,7 @@ class OutputFormat(str, Enum):
     MARKDOWN = "markdown"
     JSON = "json"
     HTML = "html"
+    PDF = "pdf"
     XLSX = "xlsx"
 
 
@@ -95,6 +96,7 @@ class RunArtifacts(BaseModel):
     report_path: Path
     findings_path: Path
     html_report_path: Path
+    pdf_report_path: Path
     workbook_path: Path
     chart_path: Path
     timeline_chart_path: Path
@@ -115,7 +117,7 @@ class RunResult(BaseModel):
     events: list[ExtractedEvent] = Field(default_factory=list)
     sources: list[SourceRecord] = Field(default_factory=list)
     outputs: list[OutputFormat] = Field(
-        default_factory=lambda: [OutputFormat.MARKDOWN, OutputFormat.JSON]
+        default_factory=lambda: [OutputFormat.MARKDOWN, OutputFormat.JSON, OutputFormat.HTML, OutputFormat.PDF, OutputFormat.XLSX]
     )
     artifacts: RunArtifacts | None = None
 

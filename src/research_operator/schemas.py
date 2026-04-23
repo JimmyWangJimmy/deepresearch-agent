@@ -97,6 +97,7 @@ class RunArtifacts(BaseModel):
     html_report_path: Path
     workbook_path: Path
     chart_path: Path
+    timeline_chart_path: Path
     source_ledger_path: Path
     entities_path: Path
     entities_csv_path: Path

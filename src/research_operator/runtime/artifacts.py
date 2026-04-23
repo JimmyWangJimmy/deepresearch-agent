@@ -23,6 +23,7 @@ def write_artifacts(result: RunResult, base_dir: Path) -> RunResult:
     html_report_path = run_dir / "research_report.html"
     workbook_path = run_dir / "research_workbook.xlsx"
     chart_path = run_dir / "source_scores.svg"
+    timeline_chart_path = run_dir / "event_timeline.svg"
     source_ledger_path = run_dir / "source_ledger.json"
     entities_path = run_dir / "entities.json"
     entities_csv_path = run_dir / "entities.csv"
@@ -36,6 +37,7 @@ def write_artifacts(result: RunResult, base_dir: Path) -> RunResult:
         html_report_path=html_report_path,
         workbook_path=workbook_path,
         chart_path=chart_path,
+        timeline_chart_path=timeline_chart_path,
         source_ledger_path=source_ledger_path,
         entities_path=entities_path,
         entities_csv_path=entities_csv_path,
@@ -96,6 +98,7 @@ def write_artifacts(result: RunResult, base_dir: Path) -> RunResult:
     )
     write_workbook(result, workbook_path)
     chart_path.write_text(render_source_score_chart(result), encoding="utf-8")
+    timeline_chart_path.write_text(render_event_timeline_chart(result), encoding="utf-8")
     return result
 
 
@@ -150,6 +153,7 @@ def render_markdown_report(result: RunResult) -> str:
     lines.append(f"- Events CSV: `{result.artifacts.events_csv_path}`")
     lines.append(f"- Workbook: `{result.artifacts.workbook_path}`")
     lines.append(f"- Source Score Chart: `{result.artifacts.chart_path}`")
+    lines.append(f"- Event Timeline Chart: `{result.artifacts.timeline_chart_path}`")
 
     return "\n".join(lines) + "\n"
 
@@ -254,6 +258,10 @@ def render_html_report(result: RunResult) -> str:
       <section class="card" style="margin-top: 24px;">
         <h2>Source Score Chart</h2>
         <img alt="Source score chart" src="source_scores.svg" style="max-width: 100%; border-radius: 12px;" />
+      </section>
+      <section class="card" style="margin-top: 24px;">
+        <h2>Event Timeline</h2>
+        <img alt="Event timeline chart" src="event_timeline.svg" style="max-width: 100%; border-radius: 12px;" />
       </section>
       <section class="card" style="margin-top: 24px;">
         <h2>Sources</h2>
@@ -380,6 +388,52 @@ def render_source_score_chart(result: RunResult) -> str:
 """
 
 
+def render_event_timeline_chart(result: RunResult) -> str:
+    width = 720
+    height = 220
+    baseline_y = 112
+    left = 80
+    right = 660
+    events = sorted(
+        result.events[:6],
+        key=lambda item: (item.event_date or "9999-99-99", item.subject.lower()),
+    )
+
+    if not events:
+        return f"""<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" role="img" aria-label="Event timeline chart">
+  <rect width="{width}" height="{height}" fill="#fffdf8" rx="18"/>
+  <text x="16" y="24" font-size="16" font-weight="700" fill="#141312">Event Timeline</text>
+  <text x="16" y="70" font-size="14" fill="#665f55">No dated events were extracted for this run.</text>
+</svg>
+"""
+
+    step = (right - left) / max(len(events) - 1, 1)
+    labels: list[str] = [
+        f'<line x1="{left}" y1="{baseline_y}" x2="{right}" y2="{baseline_y}" stroke="#d6cbb6" stroke-width="4" stroke-linecap="round"/>'
+    ]
+    for index, event in enumerate(events):
+        x = left + step * index if len(events) > 1 else (left + right) / 2
+        labels.append(
+            f'<circle cx="{x:.2f}" cy="{baseline_y}" r="10" fill="#0f766e" opacity="0.92"/>'
+        )
+        labels.append(
+            f'<text x="{x:.2f}" y="{baseline_y - 28}" text-anchor="middle" font-size="12" fill="#665f55">{escape_html(event.event_date or "Undated")}</text>'
+        )
+        labels.append(
+            f'<text x="{x:.2f}" y="{baseline_y + 34}" text-anchor="middle" font-size="13" font-weight="700" fill="#141312">{escape_html(trim_label(event.subject, 22))}</text>'
+        )
+        labels.append(
+            f'<text x="{x:.2f}" y="{baseline_y + 54}" text-anchor="middle" font-size="12" fill="#665f55">{escape_html(trim_label(event.event_type, 18))}</text>'
+        )
+
+    return f"""<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" role="img" aria-label="Event timeline chart">
+  <rect width="{width}" height="{height}" fill="#fffdf8" rx="18"/>
+  <text x="16" y="24" font-size="16" font-weight="700" fill="#141312">Event Timeline</text>
+  {"".join(labels)}
+</svg>
+"""
+
+
 def render_executive_summary_lines(result: RunResult) -> list[str]:
     lines = [
         f"This run analyzed {len(result.sources)} source(s) and produced {len(result.findings)} top-level findings.",
@@ -429,3 +483,9 @@ def render_limitation_lines(result: RunResult) -> list[str]:
     if len(result.sources) < 2:
         limitations.append("Source diversity is limited; conclusions should be treated as preliminary.")
     return limitations
+
+
+def trim_label(value: str, max_chars: int) -> str:
+    if len(value) <= max_chars:
+        return value
+    return value[: max_chars - 1].rstrip() + "..."

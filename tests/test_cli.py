@@ -35,6 +35,7 @@ def test_run_creates_artifacts(tmp_path):
     assert (tmp_path / run_id / "research_report.html").exists()
     assert (tmp_path / run_id / "research_workbook.xlsx").exists()
     assert (tmp_path / run_id / "source_scores.svg").exists()
+    assert (tmp_path / run_id / "event_timeline.svg").exists()
     assert (tmp_path / run_id / "findings.json").exists()
     assert (tmp_path / run_id / "source_ledger.json").exists()
     assert (tmp_path / run_id / "entities.json").exists()
@@ -214,6 +215,47 @@ def test_export_copies_chart_artifact(tmp_path):
     assert export_result.exit_code == 0
     assert export_target.exists()
     assert "<svg" in export_target.read_text(encoding="utf-8")
+
+
+def test_export_copies_timeline_chart_artifact(tmp_path):
+    source_file = tmp_path / "timeline.txt"
+    source_file.write_text(
+        "2026年4月20日，星海机器人公司完成2亿元人民币融资。2026年4月22日，远航智造发布新型人形机器人平台。",
+        encoding="utf-8",
+    )
+    run_result = runner.invoke(
+        app,
+        [
+            "run",
+            "输出时间线图表交付物",
+            "--file",
+            str(source_file),
+            "--artifacts-dir",
+            str(tmp_path),
+            "--json",
+        ],
+    )
+    assert run_result.exit_code == 0
+    payload = json.loads(run_result.stdout)
+    export_target = tmp_path / "exports" / "timeline.svg"
+    export_result = runner.invoke(
+        app,
+        [
+            "export",
+            payload["run_id"],
+            "--format",
+            "timeline_chart",
+            "--artifacts-dir",
+            str(tmp_path),
+            "--output",
+            str(export_target),
+        ],
+    )
+    assert export_result.exit_code == 0
+    assert export_target.exists()
+    contents = export_target.read_text(encoding="utf-8")
+    assert "<svg" in contents
+    assert "Event Timeline" in contents
 
 
 def test_runs_lists_history(tmp_path):

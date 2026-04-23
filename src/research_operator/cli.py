@@ -87,6 +87,7 @@ def run(
     summary.add_row("HTML", str(result.artifacts.html_report_path))
     summary.add_row("Workbook", str(result.artifacts.workbook_path))
     summary.add_row("Chart", str(result.artifacts.chart_path))
+    summary.add_row("Timeline", str(result.artifacts.timeline_chart_path))
     summary.add_row("Entities CSV", str(result.artifacts.entities_csv_path))
     summary.add_row("Events CSV", str(result.artifacts.events_csv_path))
     summary.add_row("Manifest", str(result.artifacts.manifest_path))
@@ -157,7 +158,7 @@ def runs(
 @app.command()
 def export(
     run_id: str = typer.Argument(..., help="Run identifier to export."),
-    format: str = typer.Option(..., "--format", help="Export format: html, markdown, manifest, findings, sources, entities, entities_csv, events, events_csv, xlsx, chart."),
+    format: str = typer.Option(..., "--format", help="Export format: html, markdown, manifest, findings, sources, entities, entities_csv, events, events_csv, xlsx, chart, timeline_chart."),
     artifacts_dir: Path = typer.Option(
         AppConfig().artifacts_dir,
         "--artifacts-dir",
@@ -177,6 +178,7 @@ def export(
         "findings": run_dir / "findings.json",
         "xlsx": run_dir / "research_workbook.xlsx",
         "chart": run_dir / "source_scores.svg",
+        "timeline_chart": run_dir / "event_timeline.svg",
         "sources": run_dir / "source_ledger.json",
         "entities": run_dir / "entities.json",
         "entities_csv": run_dir / "entities.csv",

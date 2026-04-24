@@ -23,6 +23,7 @@ from research_operator.runtime.monitoring import (
     list_due_watches,
     list_watches,
     save_watch,
+    summarize_watches,
     update_watch_enabled,
 )
 from research_operator.runtime.provider_registry import ProviderConfigurationError, ProviderRegistry
@@ -740,6 +741,31 @@ def watch_list(
             spec.task,
         )
     console.print(table)
+
+
+@watch_app.command("summary")
+def watch_summary(
+    watches_dir: Path = typer.Option(
+        AppConfig().watches_dir,
+        "--watches-dir",
+        help="Directory where watch definitions are stored.",
+    ),
+    enabled_only: bool = typer.Option(
+        False,
+        "--enabled-only",
+        help="Only summarize enabled watches.",
+    ),
+    disabled_only: bool = typer.Option(
+        False,
+        "--disabled-only",
+        help="Only summarize disabled watches.",
+    ),
+) -> None:
+    if enabled_only and disabled_only:
+        raise typer.BadParameter("--enabled-only and --disabled-only cannot be used together.")
+    specs = list_watches(watches_dir)
+    specs = filter_watches_by_enabled(specs, True if enabled_only else False if disabled_only else None)
+    typer.echo(json.dumps(summarize_watches(specs), indent=2, ensure_ascii=False))
 
 
 if __name__ == "__main__":

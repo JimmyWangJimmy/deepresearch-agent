@@ -945,6 +945,15 @@ def test_watch_list_filters_enabled_state(tmp_path):
     assert len(payload) == 1
     assert payload[0]["watch_id"] == watch_id
 
+    summary = runner.invoke(
+        app,
+        ["watch", "summary", "--watches-dir", str(tmp_path / "watches")],
+    )
+    assert summary.exit_code == 0
+    summary_payload = json.loads(summary.stdout)
+    assert summary_payload["watch_count"] == 1
+    assert summary_payload["disabled_count"] == 1
+
 
 def test_watch_delete_removes_watch(tmp_path):
     watch_file = tmp_path / "delete-watch.txt"

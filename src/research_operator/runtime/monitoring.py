@@ -255,6 +255,33 @@ def list_due_watches(watches_dir: Path | None = None) -> list[WatchSpec]:
     return [spec for spec in list_watches(watches_dir) if is_watch_due(spec)]
 
 
+def summarize_watches(specs: list[WatchSpec]) -> dict[str, object]:
+    if not specs:
+        return {
+            "watch_count": 0,
+            "enabled_count": 0,
+            "disabled_count": 0,
+            "due_count": 0,
+            "webhook_count": 0,
+            "average_interval_minutes": 0.0,
+        }
+
+    enabled_count = sum(1 for spec in specs if spec.enabled)
+    disabled_count = len(specs) - enabled_count
+    due_count = sum(1 for spec in specs if is_watch_due(spec))
+    webhook_count = sum(1 for spec in specs if spec.webhook_url)
+    average_interval_minutes = round(sum(spec.interval_minutes for spec in specs) / len(specs), 3)
+
+    return {
+        "watch_count": len(specs),
+        "enabled_count": enabled_count,
+        "disabled_count": disabled_count,
+        "due_count": due_count,
+        "webhook_count": webhook_count,
+        "average_interval_minutes": average_interval_minutes,
+    }
+
+
 def render_watch_digest(spec: WatchSpec, execution: WatchExecution) -> str:
     lines = [
         f"# Watch {spec.name}",

@@ -343,6 +343,12 @@ def test_watch_list_filters_enabled_state_via_api(tmp_path):
     assert len(payload) == 1
     assert payload[0]["watch_id"] == watch_id
 
+    summary = client.get("/watches/summary", params={"watches_dir": str(watches_dir), "enabled": False})
+    assert summary.status_code == 200
+    summary_payload = summary.json()
+    assert summary_payload["watch_count"] == 1
+    assert summary_payload["disabled_count"] == 1
+
 
 def test_watch_delete_via_api(tmp_path):
     watch_file = tmp_path / "delete-api-watch.txt"

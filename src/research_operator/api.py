@@ -18,6 +18,7 @@ from research_operator.runtime.monitoring import (
     inspect_watch_delivery_manifest,
     list_watches,
     save_watch,
+    summarize_watches,
     update_watch_enabled,
 )
 from research_operator.runtime.provider_registry import ProviderConfigurationError, ProviderRegistry
@@ -298,6 +299,12 @@ def create_watch(request: WatchRequest) -> dict:
 def get_watches(watches_dir: str = ".dra/watches", enabled: bool | None = None) -> dict[str, list[dict]]:
     watches = filter_watches_by_enabled(list_watches(Path(watches_dir)), enabled)
     return {"watches": [item.model_dump(mode="json") for item in watches]}
+
+
+@app.get("/watches/summary")
+def get_watches_summary(watches_dir: str = ".dra/watches", enabled: bool | None = None) -> dict:
+    watches = filter_watches_by_enabled(list_watches(Path(watches_dir)), enabled)
+    return summarize_watches(watches)
 
 
 @app.get("/watches/{watch_id}")

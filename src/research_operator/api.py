@@ -8,7 +8,14 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from research_operator.runtime.engine import execute_task
-from research_operator.runtime.monitoring import build_watch_sources, execute_watch, inspect_watch, list_watches, save_watch
+from research_operator.runtime.monitoring import (
+    build_watch_sources,
+    execute_watch,
+    inspect_watch,
+    inspect_watch_delivery_manifest,
+    list_watches,
+    save_watch,
+)
 from research_operator.runtime.provider_registry import ProviderConfigurationError, ProviderRegistry
 from research_operator.runtime.release_gate import run_release_gate
 from research_operator.runtime.verification import verify_run_dir
@@ -209,6 +216,11 @@ def get_watches(watches_dir: str = ".dra/watches") -> dict[str, list[dict]]:
 @app.get("/watches/{watch_id}")
 def get_watch(watch_id: str, watches_dir: str = ".dra/watches") -> dict:
     return inspect_watch(watch_id, Path(watches_dir))
+
+
+@app.get("/watches/{watch_id}/delivery-manifest")
+def get_watch_delivery_manifest(watch_id: str, watches_dir: str = ".dra/watches") -> dict:
+    return inspect_watch_delivery_manifest(watch_id, Path(watches_dir))
 
 
 @app.post("/watches/{watch_id}/run")

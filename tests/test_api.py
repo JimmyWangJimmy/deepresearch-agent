@@ -149,3 +149,10 @@ def test_watch_lifecycle_via_api(tmp_path):
     assert payload["watch"]["watch_id"] == watch_id
     assert payload["last_execution"]["new_run_id"] == executed.json()["new_run_id"]
     assert payload["notification"]["deliverables"]["delivery_bundle"].endswith("delivery_bundle.zip")
+
+    manifest = client.get(f"/watches/{watch_id}/delivery-manifest", params={"watches_dir": str(watches_dir)})
+    assert manifest.status_code == 200
+    manifest_payload = manifest.json()
+    assert manifest_payload["latest"]["run_id"] == executed.json()["new_run_id"]
+    assert manifest_payload["primary"]["delivery_bundle"].endswith("delivery_bundle.zip")
+    assert manifest_payload["notification"]["title"]

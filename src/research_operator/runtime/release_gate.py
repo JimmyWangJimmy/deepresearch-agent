@@ -81,7 +81,7 @@ def check_cli_surface(repo_root: Path) -> GateCheck:
 def check_watch_surface(repo_root: Path) -> GateCheck:
     cli_path = repo_root / "src" / "research_operator" / "cli.py"
     text = cli_path.read_text(encoding="utf-8")
-    required_tokens = ["watch_create", "watch_run", "watch_run_all", "watch_inspect", "watch_list"]
+    required_tokens = ["watch_create", "watch_run", "watch_run_all", "watch_inspect", "watch_delivery_manifest", "watch_list"]
     missing = [token for token in required_tokens if token not in text]
     passed = not missing
     detail = "watch surface complete" if passed else f"missing watch commands: {', '.join(missing)}"
@@ -133,7 +133,7 @@ def check_query_provider_diversity() -> GateCheck:
 def check_api_surface(repo_root: Path) -> GateCheck:
     api_path = repo_root / "src" / "research_operator" / "api.py"
     text = api_path.read_text(encoding="utf-8") if api_path.exists() else ""
-    required_tokens = ["/doctor", "/runs/{run_id}/verify", "/runs/{run_id}/deliverables", "/runs/{run_id}/delivery-manifest", "/runs/{run_id}/quality", "/watches/{watch_id}"]
+    required_tokens = ["/doctor", "/runs/{run_id}/verify", "/runs/{run_id}/deliverables", "/runs/{run_id}/delivery-manifest", "/runs/{run_id}/quality", "/watches/{watch_id}", "/watches/{watch_id}/delivery-manifest"]
     missing = [token for token in required_tokens if token not in text]
     passed = api_path.exists() and not missing
     detail = "api surface present" if passed else f"missing API surface: {', '.join(missing)}"

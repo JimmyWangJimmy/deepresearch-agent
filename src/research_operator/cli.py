@@ -16,6 +16,7 @@ from research_operator.runtime.monitoring import (
     build_watch_sources,
     execute_watch,
     inspect_watch,
+    inspect_watch_delivery_manifest,
     list_due_watches,
     list_watches,
     save_watch,
@@ -485,6 +486,19 @@ def watch_inspect(
     ),
 ) -> None:
     payload = inspect_watch(watch_id, watches_dir)
+    typer.echo(json.dumps(payload, indent=2, ensure_ascii=False))
+
+
+@watch_app.command("delivery-manifest")
+def watch_delivery_manifest(
+    watch_id: str = typer.Argument(..., help="Watch identifier."),
+    watches_dir: Path = typer.Option(
+        AppConfig().watches_dir,
+        "--watches-dir",
+        help="Directory where watch definitions are stored.",
+    ),
+) -> None:
+    payload = inspect_watch_delivery_manifest(watch_id, watches_dir)
     typer.echo(json.dumps(payload, indent=2, ensure_ascii=False))
 
 

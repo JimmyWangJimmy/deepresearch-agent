@@ -76,6 +76,46 @@ def inspect_watch(watch_id: str, watches_dir: Path | None = None) -> dict:
     }
 
 
+def inspect_watch_delivery_manifest(watch_id: str, watches_dir: Path | None = None) -> dict:
+    payload = inspect_watch(watch_id, watches_dir)
+    execution = payload.get("last_execution") or {}
+    notification = payload.get("notification") or {}
+    deliverables = notification.get("deliverables") or {}
+
+    return {
+        "watch_id": watch_id,
+        "watch": {
+            "name": payload["watch"]["name"],
+            "task": payload["watch"]["task"],
+            "interval_minutes": payload["watch"]["interval_minutes"],
+            "enabled": payload["watch"]["enabled"],
+            "last_run_at": payload["watch"]["last_run_at"],
+            "next_run_at": payload["watch"]["next_run_at"],
+        },
+        "latest": {
+            "run_id": execution.get("new_run_id"),
+            "executed_at": execution.get("executed_at"),
+            "skipped_reason": execution.get("skipped_reason"),
+            "changed_source_count": len(execution.get("changed_sources") or []),
+            "unchanged_source_count": len(execution.get("unchanged_sources") or []),
+        },
+        "primary": {
+            "summary": deliverables.get("summary", ""),
+            "quality": deliverables.get("quality", ""),
+            "html_report": deliverables.get("html_report", ""),
+            "pdf_report": deliverables.get("pdf_report", ""),
+            "workbook": deliverables.get("workbook", ""),
+            "delivery_bundle": deliverables.get("delivery_bundle", ""),
+        },
+        "all": deliverables,
+        "notification": {
+            "title": notification.get("title", ""),
+            "body": notification.get("body", ""),
+        },
+        "digest_path": payload["paths"]["digest"],
+    }
+
+
 def execute_watch(
     watch_id: str,
     artifacts_dir: Path,

@@ -590,6 +590,22 @@ def test_watch_create_and_run_detects_changes(tmp_path):
     assert inspect_payload["notification"]["deliverables"]["delivery_bundle"].endswith("delivery_bundle.zip")
     assert "Changed Sources" in inspect_payload["digest"]
 
+    manifest = runner.invoke(
+        app,
+        [
+            "watch",
+            "delivery-manifest",
+            created["watch_id"],
+            "--watches-dir",
+            str(tmp_path / "watches"),
+        ],
+    )
+    assert manifest.exit_code == 0
+    manifest_payload = json.loads(manifest.stdout)
+    assert manifest_payload["latest"]["run_id"] == third_payload["new_run_id"]
+    assert manifest_payload["primary"]["delivery_bundle"].endswith("delivery_bundle.zip")
+    assert manifest_payload["notification"]["title"]
+
 
 def test_providers_lists_available_backends():
     result = runner.invoke(app, ["providers", "--json"])

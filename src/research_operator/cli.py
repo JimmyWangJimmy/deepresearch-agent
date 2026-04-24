@@ -166,6 +166,18 @@ def runs(
         max=1.0,
         help="Optional maximum quality score filter.",
     ),
+    min_source_count: int | None = typer.Option(
+        None,
+        "--min-source-count",
+        min=0,
+        help="Optional minimum source count filter.",
+    ),
+    max_source_count: int | None = typer.Option(
+        None,
+        "--max-source-count",
+        min=0,
+        help="Optional maximum source count filter.",
+    ),
     limit: int | None = typer.Option(
         None,
         "--limit",
@@ -185,6 +197,8 @@ def runs(
         has_warnings=has_warnings,
         min_quality_score=min_quality_score,
         max_quality_score=max_quality_score,
+        min_source_count=min_source_count,
+        max_source_count=max_source_count,
         limit=limit,
     )
 

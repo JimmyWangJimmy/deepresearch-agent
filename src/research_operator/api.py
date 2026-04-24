@@ -109,6 +109,8 @@ def list_runs(
     has_warnings: bool | None = None,
     min_quality_score: float | None = None,
     max_quality_score: float | None = None,
+    min_source_count: int | None = None,
+    max_source_count: int | None = None,
     limit: int | None = None,
 ) -> dict[str, list[dict]]:
     items = list_run_manifests(
@@ -118,6 +120,8 @@ def list_runs(
         has_warnings=has_warnings,
         min_quality_score=min_quality_score,
         max_quality_score=max_quality_score,
+        min_source_count=min_source_count,
+        max_source_count=max_source_count,
         limit=limit,
     )
     return {"runs": items}

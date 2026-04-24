@@ -156,6 +156,18 @@ def test_runs_endpoint_filters_by_task_type_and_limit(tmp_path):
         for item in high_quality_payload
     )
 
+    single_source = client.get(
+        "/runs",
+        params={"artifacts_dir": str(tmp_path), "max_source_count": 1},
+    )
+    assert single_source.status_code == 200
+    single_source_payload = single_source.json()["runs"]
+    assert len(single_source_payload) >= 1
+    assert all(
+        json.loads((tmp_path / item["run_id"] / "quality.json").read_text(encoding="utf-8"))["source_count"] <= 1
+        for item in single_source_payload
+    )
+
 
 def test_api_reports_provider_configuration_errors(tmp_path, monkeypatch):
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)

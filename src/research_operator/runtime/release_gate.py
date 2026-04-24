@@ -71,7 +71,7 @@ def check_provider_breadth() -> GateCheck:
 def check_cli_surface(repo_root: Path) -> GateCheck:
     cli_path = repo_root / "src" / "research_operator" / "cli.py"
     text = cli_path.read_text(encoding="utf-8")
-    required_tokens = ["def run(", "def verify(", "def export(", "format == \"all\"", "--task-type", "--task-contains", "--has-warnings/--no-has-warnings", "--min-quality-score", "--max-quality-score", "--min-source-count", "--max-source-count", "--min-event-count", "--max-event-count", "--min-entity-count", "--max-entity-count", "--limit", "def providers(", "def runs(", "def quality(", "def doctor("]
+    required_tokens = ["def run(", "def verify(", "def export(", "format == \"all\"", "--task-type", "--task-contains", "--has-warnings/--no-has-warnings", "--min-quality-score", "--max-quality-score", "--min-average-evidence-score", "--max-average-evidence-score", "--min-source-count", "--max-source-count", "--min-event-count", "--max-event-count", "--min-entity-count", "--max-entity-count", "--limit", "def providers(", "def runs(", "def quality(", "def doctor("]
     missing = [token for token in required_tokens if token not in text]
     passed = not missing
     detail = "cli surface complete" if passed else f"missing CLI commands: {', '.join(missing)}"
@@ -133,7 +133,7 @@ def check_query_provider_diversity() -> GateCheck:
 def check_api_surface(repo_root: Path) -> GateCheck:
     api_path = repo_root / "src" / "research_operator" / "api.py"
     text = api_path.read_text(encoding="utf-8") if api_path.exists() else ""
-    required_tokens = ["/doctor", "task_type: TaskType | None = None", "task_contains: str | None = None", "has_warnings: bool | None = None", "min_quality_score: float | None = None", "max_quality_score: float | None = None", "min_source_count: int | None = None", "max_source_count: int | None = None", "min_event_count: int | None = None", "max_event_count: int | None = None", "min_entity_count: int | None = None", "max_entity_count: int | None = None", "limit: int | None = None", "/runs/{run_id}/verify", "/runs/{run_id}/deliverables", "/runs/{run_id}/delivery-manifest", "/runs/{run_id}/quality", "enabled: bool | None = None", "/watches/{watch_id}", "/watches/{watch_id}/delivery-manifest", "@app.patch(\"/watches/{watch_id}\")", "@app.delete(\"/watches/{watch_id}\")"]
+    required_tokens = ["/doctor", "task_type: TaskType | None = None", "task_contains: str | None = None", "has_warnings: bool | None = None", "min_quality_score: float | None = None", "max_quality_score: float | None = None", "min_average_evidence_score: float | None = None", "max_average_evidence_score: float | None = None", "min_source_count: int | None = None", "max_source_count: int | None = None", "min_event_count: int | None = None", "max_event_count: int | None = None", "min_entity_count: int | None = None", "max_entity_count: int | None = None", "limit: int | None = None", "/runs/{run_id}/verify", "/runs/{run_id}/deliverables", "/runs/{run_id}/delivery-manifest", "/runs/{run_id}/quality", "enabled: bool | None = None", "/watches/{watch_id}", "/watches/{watch_id}/delivery-manifest", "@app.patch(\"/watches/{watch_id}\")", "@app.delete(\"/watches/{watch_id}\")"]
     missing = [token for token in required_tokens if token not in text]
     passed = api_path.exists() and not missing
     detail = "api surface present" if passed else f"missing API surface: {', '.join(missing)}"

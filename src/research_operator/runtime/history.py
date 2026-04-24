@@ -13,6 +13,8 @@ def list_run_manifests(
     has_warnings: bool | None = None,
     min_quality_score: float | None = None,
     max_quality_score: float | None = None,
+    min_average_evidence_score: float | None = None,
+    max_average_evidence_score: float | None = None,
     min_source_count: int | None = None,
     max_source_count: int | None = None,
     min_event_count: int | None = None,
@@ -45,6 +47,18 @@ def list_run_manifests(
             payload
             for payload in payloads
             if read_run_quality_score(artifacts_dir / payload["run_id"]) <= max_quality_score
+        ]
+    if min_average_evidence_score is not None:
+        payloads = [
+            payload
+            for payload in payloads
+            if read_run_average_evidence_score(artifacts_dir / payload["run_id"]) >= min_average_evidence_score
+        ]
+    if max_average_evidence_score is not None:
+        payloads = [
+            payload
+            for payload in payloads
+            if read_run_average_evidence_score(artifacts_dir / payload["run_id"]) <= max_average_evidence_score
         ]
     if min_source_count is not None:
         payloads = [
@@ -109,6 +123,14 @@ def read_run_source_count(run_dir: Path) -> int:
         return 0
     payload = json.loads(quality_path.read_text(encoding="utf-8"))
     return int(payload.get("source_count", 0))
+
+
+def read_run_average_evidence_score(run_dir: Path) -> float:
+    quality_path = run_dir / "quality.json"
+    if not quality_path.exists():
+        return 0.0
+    payload = json.loads(quality_path.read_text(encoding="utf-8"))
+    return float(payload.get("average_evidence_score", 0.0))
 
 
 def read_run_event_count(run_dir: Path) -> int:

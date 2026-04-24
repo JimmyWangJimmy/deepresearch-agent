@@ -192,6 +192,18 @@ def test_runs_endpoint_filters_by_task_type_and_limit(tmp_path):
         for item in entityful_payload
     )
 
+    strong_evidence = client.get(
+        "/runs",
+        params={"artifacts_dir": str(tmp_path), "min_average_evidence_score": 0.75},
+    )
+    assert strong_evidence.status_code == 200
+    strong_evidence_payload = strong_evidence.json()["runs"]
+    assert len(strong_evidence_payload) >= 1
+    assert all(
+        json.loads((tmp_path / item["run_id"] / "quality.json").read_text(encoding="utf-8"))["average_evidence_score"] >= 0.75
+        for item in strong_evidence_payload
+    )
+
 
 def test_api_reports_provider_configuration_errors(tmp_path, monkeypatch):
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)

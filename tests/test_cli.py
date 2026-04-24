@@ -178,6 +178,18 @@ def test_runs_filters_by_task_type_and_limit(tmp_path):
         for item in entityful_payload
     )
 
+    strong_evidence = runner.invoke(
+        app,
+        ["runs", "--artifacts-dir", str(tmp_path), "--min-average-evidence-score", "0.75", "--json"],
+    )
+    assert strong_evidence.exit_code == 0
+    strong_evidence_payload = json.loads(strong_evidence.stdout)
+    assert len(strong_evidence_payload) >= 1
+    assert all(
+        json.loads((tmp_path / item["run_id"] / "quality.json").read_text(encoding="utf-8"))["average_evidence_score"] >= 0.75
+        for item in strong_evidence_payload
+    )
+
 
 def test_verify_checks_run_integrity(tmp_path):
     source_file = tmp_path / "verify.txt"

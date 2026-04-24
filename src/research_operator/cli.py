@@ -14,10 +14,13 @@ from research_operator.runtime.doctor import run_doctor
 from research_operator.runtime.engine import execute_task
 from research_operator.runtime.history import RUN_SORT_FIELDS, list_run_manifests, summarize_run_manifests
 from research_operator.runtime.monitoring import (
+    WATCH_STATUS_FILTERS,
+    WATCH_SORT_FIELDS,
     build_watch_sources,
     delete_watch,
     execute_watch,
     filter_watches_by_enabled,
+    filter_watches_by_status,
     filter_watches_by_webhook,
     inspect_watch,
     inspect_watch_delivery_manifest,
@@ -25,9 +28,9 @@ from research_operator.runtime.monitoring import (
     list_watches,
     save_watch,
     summarize_watches,
-    WATCH_SORT_FIELDS,
     sort_watches,
     update_watch_enabled,
+    watch_to_listing,
 )
 from research_operator.runtime.provider_registry import ProviderConfigurationError, ProviderRegistry
 from research_operator.runtime.release_gate import run_release_gate
@@ -723,6 +726,11 @@ def watch_list(
         "--has-webhook/--no-has-webhook",
         help="Optional webhook configuration filter.",
     ),
+    status: str | None = typer.Option(
+        None,
+        "--status",
+        help=f"Optional execution status filter: {', '.join(sorted(WATCH_STATUS_FILTERS))}.",
+    ),
     sort_by: str = typer.Option(
         "created_at_desc",
         "--sort-by",
@@ -734,15 +742,20 @@ def watch_list(
     specs = list_due_watches(watches_dir) if due_only else list_watches(watches_dir)
     specs = filter_watches_by_enabled(specs, True if enabled_only else False if disabled_only else None)
     specs = filter_watches_by_webhook(specs, has_webhook)
+    try:
+        specs = filter_watches_by_status(specs, status, watches_dir)
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc)) from exc
     specs = sort_watches(specs, sort_by=sort_by)
     if json_output:
-        typer.echo(json.dumps([spec.model_dump(mode="json") for spec in specs], indent=2, ensure_ascii=False))
+        typer.echo(json.dumps([watch_to_listing(spec, watches_dir) for spec in specs], indent=2, ensure_ascii=False))
         return
 
     table = Table(title="Watches")
     table.add_column("Watch ID")
     table.add_column("Name")
     table.add_column("Sources")
+    table.add_column("Status")
     table.add_column("Interval")
     table.add_column("Next Run")
     table.add_column("Task")
@@ -751,6 +764,7 @@ def watch_list(
             spec.watch_id,
             spec.name,
             str(len(spec.sources)),
+            watch_to_listing(spec, watches_dir)["status"],
             str(spec.interval_minutes),
             str(spec.next_run_at or "pending"),
             spec.task,
@@ -780,13 +794,22 @@ def watch_summary(
         "--has-webhook/--no-has-webhook",
         help="Optional webhook configuration filter.",
     ),
+    status: str | None = typer.Option(
+        None,
+        "--status",
+        help=f"Optional execution status filter: {', '.join(sorted(WATCH_STATUS_FILTERS))}.",
+    ),
 ) -> None:
     if enabled_only and disabled_only:
         raise typer.BadParameter("--enabled-only and --disabled-only cannot be used together.")
     specs = list_watches(watches_dir)
     specs = filter_watches_by_enabled(specs, True if enabled_only else False if disabled_only else None)
     specs = filter_watches_by_webhook(specs, has_webhook)
-    typer.echo(json.dumps(summarize_watches(specs), indent=2, ensure_ascii=False))
+    try:
+        specs = filter_watches_by_status(specs, status, watches_dir)
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc)) from exc
+    typer.echo(json.dumps(summarize_watches(specs, watches_dir), indent=2, ensure_ascii=False))
 
 
 if __name__ == "__main__":

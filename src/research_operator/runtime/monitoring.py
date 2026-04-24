@@ -32,6 +32,8 @@ WATCH_SORT_FIELDS = {
     "interval_asc": ("interval_minutes", False),
 }
 
+WATCH_STATUS_FILTERS = {"never_run", "changed", "unchanged", "skipped"}
+
 
 def ensure_watches_dir(watches_dir: Path | None = None) -> Path:
     path = watches_dir or AppConfig().watches_dir
@@ -92,6 +94,36 @@ def filter_watches_by_webhook(specs: list[WatchSpec], has_webhook: bool | None =
     if has_webhook is None:
         return specs
     return [spec for spec in specs if bool(spec.webhook_url) is has_webhook]
+
+
+def filter_watches_by_status(
+    specs: list[WatchSpec],
+    status: str | None,
+    watches_dir: Path | None = None,
+) -> list[WatchSpec]:
+    if status is None:
+        return specs
+    if status not in WATCH_STATUS_FILTERS:
+        raise ValueError(f"Unsupported watch status: {status}")
+    return [spec for spec in specs if watch_execution_status(spec.watch_id, watches_dir) == status]
+
+
+def watch_to_listing(spec: WatchSpec, watches_dir: Path | None = None) -> dict:
+    payload = spec.model_dump(mode="json")
+    payload["status"] = watch_execution_status(spec.watch_id, watches_dir)
+    return payload
+
+
+def watch_execution_status(watch_id: str, watches_dir: Path | None = None) -> str:
+    execution_path = ensure_watches_dir(watches_dir) / watch_id / "last_execution.json"
+    if not execution_path.exists():
+        return "never_run"
+    payload = load_optional_json(execution_path)
+    if payload.get("skipped_reason"):
+        return "skipped"
+    if payload.get("changed_sources"):
+        return "changed"
+    return "unchanged"
 
 
 def sort_watches(specs: list[WatchSpec], sort_by: str = "created_at_desc") -> list[WatchSpec]:
@@ -283,7 +315,7 @@ def list_due_watches(watches_dir: Path | None = None) -> list[WatchSpec]:
     return [spec for spec in list_watches(watches_dir) if is_watch_due(spec)]
 
 
-def summarize_watches(specs: list[WatchSpec]) -> dict[str, object]:
+def summarize_watches(specs: list[WatchSpec], watches_dir: Path | None = None) -> dict[str, object]:
     if not specs:
         return {
             "watch_count": 0,
@@ -291,6 +323,7 @@ def summarize_watches(specs: list[WatchSpec]) -> dict[str, object]:
             "disabled_count": 0,
             "due_count": 0,
             "webhook_count": 0,
+            "status_counts": {status: 0 for status in sorted(WATCH_STATUS_FILTERS)},
             "average_interval_minutes": 0.0,
         }
 
@@ -298,6 +331,10 @@ def summarize_watches(specs: list[WatchSpec]) -> dict[str, object]:
     disabled_count = len(specs) - enabled_count
     due_count = sum(1 for spec in specs if is_watch_due(spec))
     webhook_count = sum(1 for spec in specs if spec.webhook_url)
+    status_counts = {
+        status: sum(1 for spec in specs if watch_execution_status(spec.watch_id, watches_dir) == status)
+        for status in sorted(WATCH_STATUS_FILTERS)
+    }
     average_interval_minutes = round(sum(spec.interval_minutes for spec in specs) / len(specs), 3)
 
     return {
@@ -306,6 +343,7 @@ def summarize_watches(specs: list[WatchSpec]) -> dict[str, object]:
         "disabled_count": disabled_count,
         "due_count": due_count,
         "webhook_count": webhook_count,
+        "status_counts": status_counts,
         "average_interval_minutes": average_interval_minutes,
     }
 

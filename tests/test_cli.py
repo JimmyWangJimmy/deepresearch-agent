@@ -734,6 +734,40 @@ def test_watch_create_and_run_detects_changes(tmp_path):
     assert manifest_payload["primary"]["delivery_bundle"].endswith("delivery_bundle.zip")
     assert manifest_payload["notification"]["title"]
 
+    status_list = runner.invoke(
+        app,
+        [
+            "watch",
+            "list",
+            "--json",
+            "--status",
+            "changed",
+            "--watches-dir",
+            str(tmp_path / "watches"),
+        ],
+    )
+    assert status_list.exit_code == 0
+    status_payload = json.loads(status_list.stdout)
+    assert len(status_payload) == 1
+    assert status_payload[0]["watch_id"] == created["watch_id"]
+    assert status_payload[0]["status"] == "changed"
+
+    status_summary = runner.invoke(
+        app,
+        [
+            "watch",
+            "summary",
+            "--status",
+            "changed",
+            "--watches-dir",
+            str(tmp_path / "watches"),
+        ],
+    )
+    assert status_summary.exit_code == 0
+    status_summary_payload = json.loads(status_summary.stdout)
+    assert status_summary_payload["watch_count"] == 1
+    assert status_summary_payload["status_counts"]["changed"] == 1
+
     disabled = runner.invoke(
         app,
         [

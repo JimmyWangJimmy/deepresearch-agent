@@ -288,6 +288,19 @@ def test_watch_lifecycle_via_api(tmp_path):
     assert manifest_payload["primary"]["delivery_bundle"].endswith("delivery_bundle.zip")
     assert manifest_payload["notification"]["title"]
 
+    status_list = client.get("/watches", params={"watches_dir": str(watches_dir), "status": "changed"})
+    assert status_list.status_code == 200
+    status_payload = status_list.json()["watches"]
+    assert len(status_payload) == 1
+    assert status_payload[0]["watch_id"] == watch_id
+    assert status_payload[0]["status"] == "changed"
+
+    status_summary = client.get("/watches/summary", params={"watches_dir": str(watches_dir), "status": "changed"})
+    assert status_summary.status_code == 200
+    status_summary_payload = status_summary.json()
+    assert status_summary_payload["watch_count"] == 1
+    assert status_summary_payload["status_counts"]["changed"] == 1
+
     disabled = client.patch(
         f"/watches/{watch_id}",
         json={

@@ -10,19 +10,22 @@ from pydantic import BaseModel, Field
 from research_operator.runtime.engine import execute_task
 from research_operator.runtime.history import RUN_SORT_FIELDS, list_run_manifests, summarize_run_manifests
 from research_operator.runtime.monitoring import (
+    WATCH_STATUS_FILTERS,
+    WATCH_SORT_FIELDS,
     build_watch_sources,
     delete_watch,
     execute_watch,
     filter_watches_by_enabled,
+    filter_watches_by_status,
     filter_watches_by_webhook,
     inspect_watch,
     inspect_watch_delivery_manifest,
     list_watches,
     save_watch,
     summarize_watches,
-    WATCH_SORT_FIELDS,
     sort_watches,
     update_watch_enabled,
+    watch_to_listing,
 )
 from research_operator.runtime.provider_registry import ProviderConfigurationError, ProviderRegistry
 from research_operator.runtime.release_gate import run_release_gate
@@ -303,14 +306,18 @@ def get_watches(
     watches_dir: str = ".dra/watches",
     enabled: bool | None = None,
     has_webhook: bool | None = None,
+    status: str | None = None,
     sort_by: str = "created_at_desc",
 ) -> dict[str, list[dict]]:
     if sort_by not in WATCH_SORT_FIELDS:
         raise HTTPException(status_code=400, detail=f"Unsupported sort_by: {sort_by}")
+    if status is not None and status not in WATCH_STATUS_FILTERS:
+        raise HTTPException(status_code=400, detail=f"Unsupported status: {status}")
     watches = filter_watches_by_enabled(list_watches(Path(watches_dir)), enabled)
     watches = filter_watches_by_webhook(watches, has_webhook)
+    watches = filter_watches_by_status(watches, status, Path(watches_dir))
     watches = sort_watches(watches, sort_by=sort_by)
-    return {"watches": [item.model_dump(mode="json") for item in watches]}
+    return {"watches": [watch_to_listing(item, Path(watches_dir)) for item in watches]}
 
 
 @app.get("/watches/summary")
@@ -318,10 +325,14 @@ def get_watches_summary(
     watches_dir: str = ".dra/watches",
     enabled: bool | None = None,
     has_webhook: bool | None = None,
+    status: str | None = None,
 ) -> dict:
+    if status is not None and status not in WATCH_STATUS_FILTERS:
+        raise HTTPException(status_code=400, detail=f"Unsupported status: {status}")
     watches = filter_watches_by_enabled(list_watches(Path(watches_dir)), enabled)
     watches = filter_watches_by_webhook(watches, has_webhook)
-    return summarize_watches(watches)
+    watches = filter_watches_by_status(watches, status, Path(watches_dir))
+    return summarize_watches(watches, Path(watches_dir))
 
 
 @app.get("/watches/{watch_id}")

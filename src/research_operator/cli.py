@@ -152,6 +152,20 @@ def runs(
         "--has-warnings/--no-has-warnings",
         help="Optional quality warning filter.",
     ),
+    min_quality_score: float | None = typer.Option(
+        None,
+        "--min-quality-score",
+        min=0.0,
+        max=1.0,
+        help="Optional minimum quality score filter.",
+    ),
+    max_quality_score: float | None = typer.Option(
+        None,
+        "--max-quality-score",
+        min=0.0,
+        max=1.0,
+        help="Optional maximum quality score filter.",
+    ),
     limit: int | None = typer.Option(
         None,
         "--limit",
@@ -169,6 +183,8 @@ def runs(
         task_type=task_type,
         task_contains=task_contains,
         has_warnings=has_warnings,
+        min_quality_score=min_quality_score,
+        max_quality_score=max_quality_score,
         limit=limit,
     )
 

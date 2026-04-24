@@ -124,6 +124,24 @@ def test_runs_filters_by_task_type_and_limit(tmp_path):
     warned_payload = json.loads(warned.stdout)
     assert len(warned_payload) == 2
 
+    low_quality = runner.invoke(
+        app,
+        ["run", "普通任务", "--artifacts-dir", str(tmp_path), "--json"],
+    )
+    assert low_quality.exit_code == 0
+
+    high_quality = runner.invoke(
+        app,
+        ["runs", "--artifacts-dir", str(tmp_path), "--min-quality-score", "0.75", "--json"],
+    )
+    assert high_quality.exit_code == 0
+    high_quality_payload = json.loads(high_quality.stdout)
+    assert len(high_quality_payload) >= 1
+    assert all(
+        json.loads((tmp_path / item["run_id"] / "quality.json").read_text(encoding="utf-8"))["score"] >= 0.75
+        for item in high_quality_payload
+    )
+
 
 def test_verify_checks_run_integrity(tmp_path):
     source_file = tmp_path / "verify.txt"

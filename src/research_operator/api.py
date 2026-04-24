@@ -107,6 +107,8 @@ def list_runs(
     task_type: TaskType | None = None,
     task_contains: str | None = None,
     has_warnings: bool | None = None,
+    min_quality_score: float | None = None,
+    max_quality_score: float | None = None,
     limit: int | None = None,
 ) -> dict[str, list[dict]]:
     items = list_run_manifests(
@@ -114,6 +116,8 @@ def list_runs(
         task_type=task_type,
         task_contains=task_contains,
         has_warnings=has_warnings,
+        min_quality_score=min_quality_score,
+        max_quality_score=max_quality_score,
         limit=limit,
     )
     return {"runs": items}

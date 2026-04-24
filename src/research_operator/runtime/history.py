@@ -11,6 +11,8 @@ def list_run_manifests(
     task_type: TaskType | None = None,
     task_contains: str | None = None,
     has_warnings: bool | None = None,
+    min_quality_score: float | None = None,
+    max_quality_score: float | None = None,
     limit: int | None = None,
 ) -> list[dict]:
     manifests = sorted(artifacts_dir.glob("*/run_manifest.json"), reverse=True)
@@ -26,6 +28,18 @@ def list_run_manifests(
             for payload in payloads
             if run_has_warnings(artifacts_dir / payload["run_id"]) is has_warnings
         ]
+    if min_quality_score is not None:
+        payloads = [
+            payload
+            for payload in payloads
+            if read_run_quality_score(artifacts_dir / payload["run_id"]) >= min_quality_score
+        ]
+    if max_quality_score is not None:
+        payloads = [
+            payload
+            for payload in payloads
+            if read_run_quality_score(artifacts_dir / payload["run_id"]) <= max_quality_score
+        ]
     if limit is not None:
         payloads = payloads[:limit]
     return payloads
@@ -37,3 +51,11 @@ def run_has_warnings(run_dir: Path) -> bool:
         return False
     payload = json.loads(quality_path.read_text(encoding="utf-8"))
     return bool(payload.get("warnings"))
+
+
+def read_run_quality_score(run_dir: Path) -> float:
+    quality_path = run_dir / "quality.json"
+    if not quality_path.exists():
+        return 0.0
+    payload = json.loads(quality_path.read_text(encoding="utf-8"))
+    return float(payload.get("score", 0.0))

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 from fastapi.testclient import TestClient
 
 from research_operator.api import app
@@ -135,6 +137,24 @@ def test_runs_endpoint_filters_by_task_type_and_limit(tmp_path):
     assert warned.status_code == 200
     warned_payload = warned.json()["runs"]
     assert len(warned_payload) == 2
+
+    low_quality = client.post(
+        "/runs",
+        json={"task": "普通任务", "artifacts_dir": str(tmp_path)},
+    )
+    assert low_quality.status_code == 200
+
+    high_quality = client.get(
+        "/runs",
+        params={"artifacts_dir": str(tmp_path), "min_quality_score": 0.75},
+    )
+    assert high_quality.status_code == 200
+    high_quality_payload = high_quality.json()["runs"]
+    assert len(high_quality_payload) >= 1
+    assert all(
+        json.loads((tmp_path / item["run_id"] / "quality.json").read_text(encoding="utf-8"))["score"] >= 0.75
+        for item in high_quality_payload
+    )
 
 
 def test_api_reports_provider_configuration_errors(tmp_path, monkeypatch):

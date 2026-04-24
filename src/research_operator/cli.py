@@ -20,6 +20,7 @@ from research_operator.runtime.monitoring import (
     delete_watch,
     execute_watch,
     filter_watches_by_enabled,
+    filter_watches_by_deliverables,
     filter_watches_by_status,
     filter_watches_by_webhook,
     inspect_watch,
@@ -726,6 +727,11 @@ def watch_list(
         "--has-webhook/--no-has-webhook",
         help="Optional webhook configuration filter.",
     ),
+    has_deliverables: bool | None = typer.Option(
+        None,
+        "--has-deliverables/--no-has-deliverables",
+        help="Optional generated deliverables filter.",
+    ),
     status: str | None = typer.Option(
         None,
         "--status",
@@ -742,6 +748,7 @@ def watch_list(
     specs = list_due_watches(watches_dir) if due_only else list_watches(watches_dir)
     specs = filter_watches_by_enabled(specs, True if enabled_only else False if disabled_only else None)
     specs = filter_watches_by_webhook(specs, has_webhook)
+    specs = filter_watches_by_deliverables(specs, has_deliverables, watches_dir)
     try:
         specs = filter_watches_by_status(specs, status, watches_dir)
     except ValueError as exc:
@@ -756,15 +763,18 @@ def watch_list(
     table.add_column("Name")
     table.add_column("Sources")
     table.add_column("Status")
+    table.add_column("Deliverables")
     table.add_column("Interval")
     table.add_column("Next Run")
     table.add_column("Task")
     for spec in specs:
+        listing = watch_to_listing(spec, watches_dir)
         table.add_row(
             spec.watch_id,
             spec.name,
             str(len(spec.sources)),
-            watch_to_listing(spec, watches_dir)["status"],
+            listing["status"],
+            "yes" if listing["has_deliverables"] else "no",
             str(spec.interval_minutes),
             str(spec.next_run_at or "pending"),
             spec.task,
@@ -794,6 +804,11 @@ def watch_summary(
         "--has-webhook/--no-has-webhook",
         help="Optional webhook configuration filter.",
     ),
+    has_deliverables: bool | None = typer.Option(
+        None,
+        "--has-deliverables/--no-has-deliverables",
+        help="Optional generated deliverables filter.",
+    ),
     status: str | None = typer.Option(
         None,
         "--status",
@@ -805,6 +820,7 @@ def watch_summary(
     specs = list_watches(watches_dir)
     specs = filter_watches_by_enabled(specs, True if enabled_only else False if disabled_only else None)
     specs = filter_watches_by_webhook(specs, has_webhook)
+    specs = filter_watches_by_deliverables(specs, has_deliverables, watches_dir)
     try:
         specs = filter_watches_by_status(specs, status, watches_dir)
     except ValueError as exc:

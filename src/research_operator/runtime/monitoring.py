@@ -96,6 +96,16 @@ def filter_watches_by_webhook(specs: list[WatchSpec], has_webhook: bool | None =
     return [spec for spec in specs if bool(spec.webhook_url) is has_webhook]
 
 
+def filter_watches_by_deliverables(
+    specs: list[WatchSpec],
+    has_deliverables: bool | None,
+    watches_dir: Path | None = None,
+) -> list[WatchSpec]:
+    if has_deliverables is None:
+        return specs
+    return [spec for spec in specs if watch_has_deliverables(spec.watch_id, watches_dir) is has_deliverables]
+
+
 def filter_watches_by_status(
     specs: list[WatchSpec],
     status: str | None,
@@ -111,7 +121,15 @@ def filter_watches_by_status(
 def watch_to_listing(spec: WatchSpec, watches_dir: Path | None = None) -> dict:
     payload = spec.model_dump(mode="json")
     payload["status"] = watch_execution_status(spec.watch_id, watches_dir)
+    payload["has_deliverables"] = watch_has_deliverables(spec.watch_id, watches_dir)
     return payload
+
+
+def watch_has_deliverables(watch_id: str, watches_dir: Path | None = None) -> bool:
+    notification_path = ensure_watches_dir(watches_dir) / watch_id / "notification.json"
+    payload = load_optional_json(notification_path)
+    deliverables = payload.get("deliverables") if isinstance(payload, dict) else None
+    return bool(deliverables)
 
 
 def watch_execution_status(watch_id: str, watches_dir: Path | None = None) -> str:
@@ -323,6 +341,7 @@ def summarize_watches(specs: list[WatchSpec], watches_dir: Path | None = None) -
             "disabled_count": 0,
             "due_count": 0,
             "webhook_count": 0,
+            "deliverable_count": 0,
             "status_counts": {status: 0 for status in sorted(WATCH_STATUS_FILTERS)},
             "average_interval_minutes": 0.0,
         }
@@ -331,6 +350,7 @@ def summarize_watches(specs: list[WatchSpec], watches_dir: Path | None = None) -
     disabled_count = len(specs) - enabled_count
     due_count = sum(1 for spec in specs if is_watch_due(spec))
     webhook_count = sum(1 for spec in specs if spec.webhook_url)
+    deliverable_count = sum(1 for spec in specs if watch_has_deliverables(spec.watch_id, watches_dir))
     status_counts = {
         status: sum(1 for spec in specs if watch_execution_status(spec.watch_id, watches_dir) == status)
         for status in sorted(WATCH_STATUS_FILTERS)
@@ -343,6 +363,7 @@ def summarize_watches(specs: list[WatchSpec], watches_dir: Path | None = None) -
         "disabled_count": disabled_count,
         "due_count": due_count,
         "webhook_count": webhook_count,
+        "deliverable_count": deliverable_count,
         "status_counts": status_counts,
         "average_interval_minutes": average_interval_minutes,
     }

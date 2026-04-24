@@ -15,6 +15,7 @@ from research_operator.runtime.monitoring import (
     build_watch_sources,
     delete_watch,
     execute_watch,
+    filter_watches_by_deliverables,
     filter_watches_by_enabled,
     filter_watches_by_status,
     filter_watches_by_webhook,
@@ -306,6 +307,7 @@ def get_watches(
     watches_dir: str = ".dra/watches",
     enabled: bool | None = None,
     has_webhook: bool | None = None,
+    has_deliverables: bool | None = None,
     status: str | None = None,
     sort_by: str = "created_at_desc",
 ) -> dict[str, list[dict]]:
@@ -315,6 +317,7 @@ def get_watches(
         raise HTTPException(status_code=400, detail=f"Unsupported status: {status}")
     watches = filter_watches_by_enabled(list_watches(Path(watches_dir)), enabled)
     watches = filter_watches_by_webhook(watches, has_webhook)
+    watches = filter_watches_by_deliverables(watches, has_deliverables, Path(watches_dir))
     watches = filter_watches_by_status(watches, status, Path(watches_dir))
     watches = sort_watches(watches, sort_by=sort_by)
     return {"watches": [watch_to_listing(item, Path(watches_dir)) for item in watches]}
@@ -325,12 +328,14 @@ def get_watches_summary(
     watches_dir: str = ".dra/watches",
     enabled: bool | None = None,
     has_webhook: bool | None = None,
+    has_deliverables: bool | None = None,
     status: str | None = None,
 ) -> dict:
     if status is not None and status not in WATCH_STATUS_FILTERS:
         raise HTTPException(status_code=400, detail=f"Unsupported status: {status}")
     watches = filter_watches_by_enabled(list_watches(Path(watches_dir)), enabled)
     watches = filter_watches_by_webhook(watches, has_webhook)
+    watches = filter_watches_by_deliverables(watches, has_deliverables, Path(watches_dir))
     watches = filter_watches_by_status(watches, status, Path(watches_dir))
     return summarize_watches(watches, Path(watches_dir))
 

@@ -751,6 +751,7 @@ def test_watch_create_and_run_detects_changes(tmp_path):
     assert len(status_payload) == 1
     assert status_payload[0]["watch_id"] == created["watch_id"]
     assert status_payload[0]["status"] == "changed"
+    assert status_payload[0]["has_deliverables"] is True
 
     status_summary = runner.invoke(
         app,
@@ -766,6 +767,7 @@ def test_watch_create_and_run_detects_changes(tmp_path):
     assert status_summary.exit_code == 0
     status_summary_payload = json.loads(status_summary.stdout)
     assert status_summary_payload["watch_count"] == 1
+    assert status_summary_payload["deliverable_count"] == 1
     assert status_summary_payload["status_counts"]["changed"] == 1
 
     disabled = runner.invoke(
@@ -1008,6 +1010,15 @@ def test_watch_list_filters_enabled_state(tmp_path):
     webhook_payload = json.loads(webhook_list.stdout)
     assert len(webhook_payload) == 1
     assert webhook_payload[0]["webhook_url"] == "https://example.com/hook"
+    assert webhook_payload[0]["has_deliverables"] is False
+
+    no_deliverables_list = runner.invoke(
+        app,
+        ["watch", "list", "--json", "--no-has-deliverables", "--watches-dir", str(tmp_path / "watches")],
+    )
+    assert no_deliverables_list.exit_code == 0
+    no_deliverables_payload = json.loads(no_deliverables_list.stdout)
+    assert len(no_deliverables_payload) == 2
 
     summary = runner.invoke(
         app,

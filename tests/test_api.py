@@ -294,11 +294,13 @@ def test_watch_lifecycle_via_api(tmp_path):
     assert len(status_payload) == 1
     assert status_payload[0]["watch_id"] == watch_id
     assert status_payload[0]["status"] == "changed"
+    assert status_payload[0]["has_deliverables"] is True
 
     status_summary = client.get("/watches/summary", params={"watches_dir": str(watches_dir), "status": "changed"})
     assert status_summary.status_code == 200
     status_summary_payload = status_summary.json()
     assert status_summary_payload["watch_count"] == 1
+    assert status_summary_payload["deliverable_count"] == 1
     assert status_summary_payload["status_counts"]["changed"] == 1
 
     disabled = client.patch(
@@ -376,6 +378,11 @@ def test_watch_list_filters_enabled_state_via_api(tmp_path):
     webhook_payload = webhook_list.json()["watches"]
     assert len(webhook_payload) == 1
     assert webhook_payload[0]["webhook_url"] == "https://example.com/hook"
+    assert webhook_payload[0]["has_deliverables"] is False
+
+    no_deliverables = client.get("/watches", params={"watches_dir": str(watches_dir), "has_deliverables": False})
+    assert no_deliverables.status_code == 200
+    assert len(no_deliverables.json()["watches"]) == 2
 
     summary = client.get("/watches/summary", params={"watches_dir": str(watches_dir), "has_webhook": True})
     assert summary.status_code == 200

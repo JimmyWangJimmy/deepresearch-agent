@@ -129,6 +129,25 @@ def test_runs_filters_by_task_type_and_limit(tmp_path):
         ["run", "普通任务", "--artifacts-dir", str(tmp_path), "--json"],
     )
     assert low_quality.exit_code == 0
+    low_quality_payload = json.loads(low_quality.stdout)
+    (tmp_path / low_quality_payload["run_id"] / "delivery_bundle.zip").unlink()
+
+    deliverable_runs = runner.invoke(
+        app,
+        ["runs", "--artifacts-dir", str(tmp_path), "--has-deliverables", "--json"],
+    )
+    assert deliverable_runs.exit_code == 0
+    deliverable_payload = json.loads(deliverable_runs.stdout)
+    assert deliverable_payload
+    assert all((tmp_path / item["run_id"] / "delivery_bundle.zip").exists() for item in deliverable_payload)
+
+    missing_deliverable_runs = runner.invoke(
+        app,
+        ["runs", "--artifacts-dir", str(tmp_path), "--no-has-deliverables", "--json"],
+    )
+    assert missing_deliverable_runs.exit_code == 0
+    missing_deliverable_payload = json.loads(missing_deliverable_runs.stdout)
+    assert [item["run_id"] for item in missing_deliverable_payload] == [low_quality_payload["run_id"]]
 
     high_quality = runner.invoke(
         app,
@@ -209,6 +228,7 @@ def test_runs_filters_by_task_type_and_limit(tmp_path):
     assert summary.exit_code == 0
     summary_payload = json.loads(summary.stdout)
     assert summary_payload["run_count"] >= 3
+    assert summary_payload["deliverable_run_count"] == summary_payload["run_count"] - 1
     assert "research" in summary_payload["task_types"] or "monitor" in summary_payload["task_types"]
 
 

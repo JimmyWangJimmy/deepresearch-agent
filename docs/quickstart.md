@@ -131,6 +131,7 @@ curl "http://localhost:8000/runs?artifacts_dir=demo/api-artifacts&task_type=file
 curl "http://localhost:8000/runs?artifacts_dir=demo/api-artifacts&task_contains=%E6%96%87%E4%BB%B6"
 curl "http://localhost:8000/runs/summary?artifacts_dir=demo/api-artifacts"
 curl "http://localhost:8000/runs?artifacts_dir=demo/api-artifacts&has_warnings=true"
+curl "http://localhost:8000/runs?artifacts_dir=demo/api-artifacts&has_deliverables=true"
 curl "http://localhost:8000/runs?artifacts_dir=demo/api-artifacts&min_quality_score=0.75"
 curl "http://localhost:8000/runs?artifacts_dir=demo/api-artifacts&min_average_evidence_score=0.75"
 curl "http://localhost:8000/runs?artifacts_dir=demo/api-artifacts&sort_by=quality_desc"

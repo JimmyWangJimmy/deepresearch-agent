@@ -143,6 +143,25 @@ def test_runs_endpoint_filters_by_task_type_and_limit(tmp_path):
         json={"task": "普通任务", "artifacts_dir": str(tmp_path)},
     )
     assert low_quality.status_code == 200
+    low_quality_run_id = low_quality.json()["run_id"]
+    (tmp_path / low_quality_run_id / "delivery_bundle.zip").unlink()
+
+    deliverable_runs = client.get(
+        "/runs",
+        params={"artifacts_dir": str(tmp_path), "has_deliverables": True},
+    )
+    assert deliverable_runs.status_code == 200
+    deliverable_payload = deliverable_runs.json()["runs"]
+    assert deliverable_payload
+    assert all((tmp_path / item["run_id"] / "delivery_bundle.zip").exists() for item in deliverable_payload)
+
+    missing_deliverable_runs = client.get(
+        "/runs",
+        params={"artifacts_dir": str(tmp_path), "has_deliverables": False},
+    )
+    assert missing_deliverable_runs.status_code == 200
+    missing_deliverable_payload = missing_deliverable_runs.json()["runs"]
+    assert [item["run_id"] for item in missing_deliverable_payload] == [low_quality_run_id]
 
     high_quality = client.get(
         "/runs",
@@ -223,6 +242,7 @@ def test_runs_endpoint_filters_by_task_type_and_limit(tmp_path):
     assert summary.status_code == 200
     summary_payload = summary.json()
     assert summary_payload["run_count"] >= 3
+    assert summary_payload["deliverable_run_count"] == summary_payload["run_count"] - 1
     assert "research" in summary_payload["task_types"] or "monitor" in summary_payload["task_types"]
 
 

@@ -21,6 +21,7 @@ def list_run_manifests(
     artifacts_dir: Path,
     task_type: TaskType | None = None,
     task_contains: str | None = None,
+    has_deliverables: bool | None = None,
     has_warnings: bool | None = None,
     min_quality_score: float | None = None,
     max_quality_score: float | None = None,
@@ -42,6 +43,12 @@ def list_run_manifests(
     if task_contains:
         needle = task_contains.lower()
         payloads = [payload for payload in payloads if needle in payload.get("task", "").lower()]
+    if has_deliverables is not None:
+        payloads = [
+            payload
+            for payload in payloads
+            if run_has_deliverables(artifacts_dir / payload["run_id"]) is has_deliverables
+        ]
     if has_warnings is not None:
         payloads = [
             payload
@@ -124,6 +131,7 @@ def summarize_run_manifests(payloads: list[dict], artifacts_dir: Path) -> dict[s
             "average_source_count": 0.0,
             "average_event_count": 0.0,
             "average_entity_count": 0.0,
+            "deliverable_run_count": 0,
             "warning_run_count": 0,
         }
 
@@ -133,6 +141,7 @@ def summarize_run_manifests(payloads: list[dict], artifacts_dir: Path) -> dict[s
     source_counts: list[int] = []
     event_counts: list[int] = []
     entity_counts: list[int] = []
+    deliverable_run_count = 0
     warning_run_count = 0
 
     for payload in payloads:
@@ -144,6 +153,8 @@ def summarize_run_manifests(payloads: list[dict], artifacts_dir: Path) -> dict[s
         source_counts.append(read_run_source_count(run_dir))
         event_counts.append(read_run_event_count(run_dir))
         entity_counts.append(read_run_entity_count(run_dir))
+        if run_has_deliverables(run_dir):
+            deliverable_run_count += 1
         if run_has_warnings(run_dir):
             warning_run_count += 1
 
@@ -158,6 +169,7 @@ def summarize_run_manifests(payloads: list[dict], artifacts_dir: Path) -> dict[s
         "average_source_count": avg(source_counts),
         "average_event_count": avg(event_counts),
         "average_entity_count": avg(entity_counts),
+        "deliverable_run_count": deliverable_run_count,
         "warning_run_count": warning_run_count,
     }
 
@@ -186,6 +198,10 @@ def run_has_warnings(run_dir: Path) -> bool:
         return False
     payload = json.loads(quality_path.read_text(encoding="utf-8"))
     return bool(payload.get("warnings"))
+
+
+def run_has_deliverables(run_dir: Path) -> bool:
+    return (run_dir / "delivery_bundle.zip").exists()
 
 
 def read_run_quality_score(run_dir: Path) -> float:

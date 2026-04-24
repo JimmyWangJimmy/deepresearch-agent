@@ -61,7 +61,7 @@ def read_file_text(path: Path) -> str:
     suffix = path.suffix.lower()
     if suffix in {".txt", ".md", ".html", ".htm"}:
         raw = path.read_text(encoding="utf-8", errors="replace")
-        return html_to_text(raw) if suffix in {".html", ".htm"} else normalize_whitespace(raw)
+        return html_to_text(raw) if suffix in {".html", ".htm"} else raw.strip()
     if suffix == ".csv":
         with path.open("r", encoding="utf-8", errors="replace", newline="") as handle:
             reader = csv.reader(handle)

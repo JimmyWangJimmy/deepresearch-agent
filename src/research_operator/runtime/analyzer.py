@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from research_operator.schemas import CollectedSource, ExtractedEntity, ExtractedEvent, Finding, RunPlan, TaskType
 
 
@@ -74,6 +76,8 @@ def generate_findings(
             )
         )
 
+    base.extend(generate_task_aligned_findings(task, collected))
+
     base.append(
         Finding(
             title="Task captured",
@@ -146,6 +150,129 @@ def generate_findings(
             )
         )
     return base
+
+
+def generate_task_aligned_findings(task: str, collected: list[CollectedSource]) -> list[Finding]:
+    sections = collect_markdown_sections(collected)
+    if not sections:
+        return []
+
+    task_lower = task.lower()
+    findings: list[Finding] = []
+
+    if "产品定位" in task or "position" in task_lower or "定位" in task:
+        section = find_section(sections, ("product position", "产品定位", "position"))
+        if section:
+            findings.append(
+                Finding(
+                    title="产品定位",
+                    detail=summarize_section(section),
+                    confidence="high",
+                )
+            )
+
+    if "交付" in task or "deliver" in task_lower or "artifact" in task_lower or "能力" in task:
+        section = find_section(sections, ("current scope", "delivery standard", "artifact", "交付"))
+        if section:
+            findings.append(
+                Finding(
+                    title="交付能力",
+                    detail=summarize_section(section),
+                    confidence="high",
+                )
+            )
+
+    if "验收" in task or "commercial" in task_lower or "acceptance" in task_lower or "市场" in task:
+        section = find_section(sections, ("delivery standard", "current commands", "api service", "quick start", "gate"))
+        if section:
+            findings.append(
+                Finding(
+                    title="商业化验收点",
+                    detail=summarize_section(section),
+                    confidence="high",
+                )
+            )
+
+    return dedupe_findings(findings)
+
+
+def collect_markdown_sections(collected: list[CollectedSource]) -> list[tuple[str, str, str]]:
+    sections: list[tuple[str, str, str]] = []
+    for source in collected:
+        current_title = ""
+        current_lines: list[str] = []
+        for line in source.content.splitlines():
+            heading = re.match(r"^#{1,3}\s+(.+?)\s*$", line)
+            if heading:
+                if current_title and current_lines:
+                    sections.append((current_title, "\n".join(current_lines), source.record.label))
+                current_title = heading.group(1).strip()
+                current_lines = []
+                continue
+            if current_title:
+                current_lines.append(line)
+        if current_title and current_lines:
+            sections.append((current_title, "\n".join(current_lines), source.record.label))
+    return sections
+
+
+def find_section(sections: list[tuple[str, str, str]], keywords: tuple[str, ...]) -> tuple[str, str, str] | None:
+    for keyword in keywords:
+        for section in sections:
+            title = section[0].lower()
+            if contains_keyword(title, keyword):
+                return section
+    for keyword in keywords:
+        for section in sections:
+            body = section[1].lower()
+            if contains_keyword(body, keyword):
+                return section
+    return None
+
+
+def contains_keyword(text: str, keyword: str) -> bool:
+    normalized_keyword = keyword.lower()
+    if re.fullmatch(r"[a-z0-9_ -]+", normalized_keyword):
+        return re.search(rf"(?<![a-z0-9]){re.escape(normalized_keyword)}(?![a-z0-9])", text) is not None
+    return normalized_keyword in text
+
+
+def summarize_section(section: tuple[str, str, str]) -> str:
+    title, body, source_label = section
+    points = extract_section_points(body)
+    evidence = "; ".join(points[:4]) if points else compact_text(body)
+    return f"{source_label} / {title}: {evidence}"
+
+
+def extract_section_points(body: str) -> list[str]:
+    points: list[str] = []
+    for line in body.splitlines():
+        value = line.strip()
+        if not value:
+            continue
+        if value.startswith("```"):
+            break
+        value = value.lstrip("-0123456789. )`").strip()
+        if len(value) < 3:
+            continue
+        points.append(compact_text(value))
+    return points
+
+
+def compact_text(text: str, limit: int = 280) -> str:
+    value = re.sub(r"\s+", " ", text).strip()
+    return value if len(value) <= limit else value[: limit - 1].rstrip() + "…"
+
+
+def dedupe_findings(findings: list[Finding]) -> list[Finding]:
+    seen: set[str] = set()
+    unique: list[Finding] = []
+    for finding in findings:
+        if finding.title in seen:
+            continue
+        seen.add(finding.title)
+        unique.append(finding)
+    return unique
 
 
 def score_sources(

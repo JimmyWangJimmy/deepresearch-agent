@@ -35,7 +35,7 @@ def extract_entities(collected: list[CollectedSource]) -> list[ExtractedEntity]:
     seen: set[tuple[str, str, str]] = set()
 
     for source in collected:
-        text = source.content
+        text = strip_fenced_code_blocks(source.content)
         for match in find_organizations(text):
             key = (match, source.record.label, source.record.locator)
             if key in seen:
@@ -86,7 +86,7 @@ def extract_events(collected: list[CollectedSource]) -> list[ExtractedEvent]:
     seen: set[tuple[str, str, str, str]] = set()
 
     for source in collected:
-        sentences = split_sentences(source.content)
+        sentences = split_sentences(strip_fenced_code_blocks(source.content))
         for sentence in sentences:
             event_type = detect_event_type(sentence)
             if not event_type:
@@ -150,6 +150,10 @@ def detect_event_type(text: str) -> str | None:
 def split_sentences(text: str) -> list[str]:
     candidates = re.split(r"(?<=[。！？.!?])\s+|\n+", text)
     return [item.strip() for item in candidates if item.strip()]
+
+
+def strip_fenced_code_blocks(text: str) -> str:
+    return re.sub(r"```.*?```", "", text, flags=re.DOTALL)
 
 
 def dedupe_clean(items: list[str]) -> list[str]:

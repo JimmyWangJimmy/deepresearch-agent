@@ -61,6 +61,63 @@ def test_acceptance_research_deliverable(tmp_path, monkeypatch):
     assert payload["sources"]
 
 
+def test_acceptance_readme_analysis_is_task_aligned(tmp_path):
+    readme = tmp_path / "README.md"
+    readme.write_text(
+        """# Demo Agent
+
+## Product position
+
+Demo Agent turns natural-language requests into reproducible runs and artifact-first delivery.
+
+## Current scope
+
+- CLI execution
+- API service
+- PDF, HTML, XLSX, JSON, CSV, and ZIP deliverables
+
+## Delivery standard
+
+- Execution manifest
+- Quality summary
+- Release gate
+- Customer-ready delivery bundle
+
+```bash
+dra run "抓取最近30天中国机器人融资事件"
+```
+""",
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "run",
+            "分析这个README，提取产品定位、交付能力、商业化验收点",
+            "--file",
+            str(readme),
+            "--artifacts-dir",
+            str(tmp_path / "artifacts"),
+            "--json",
+        ],
+    )
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    findings = {item["title"]: item["detail"] for item in payload["findings"]}
+    titles = {item["title"] for item in payload["findings"]}
+    assert {"产品定位", "交付能力", "商业化验收点"}.issubset(titles)
+    assert "Product position" in findings["产品定位"]
+    assert "Current scope" in findings["交付能力"]
+    assert "Delivery standard" in findings["商业化验收点"]
+    assert not payload["events"]
+
+    report = (tmp_path / "artifacts" / payload["run_id"] / "research_report.md").read_text(encoding="utf-8")
+    assert "产品定位" in report
+    assert "交付能力" in report
+    assert "商业化验收点" in report
+
+
 def test_acceptance_monitoring_deliverable(tmp_path):
     watch_file = tmp_path / "watch.txt"
     watch_file.write_text("版本一", encoding="utf-8")

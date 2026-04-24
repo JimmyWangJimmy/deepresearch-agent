@@ -168,6 +168,7 @@ curl -X POST "http://localhost:8000/watches/$WATCH_ID/run" \
 
 curl "http://localhost:8000/watches/$WATCH_ID?watches_dir=demo/api-watches"
 curl "http://localhost:8000/watches/summary?watches_dir=demo/api-watches"
+curl "http://localhost:8000/watches?watches_dir=demo/api-watches&sort_by=interval_desc"
 curl "http://localhost:8000/watches/$WATCH_ID/delivery-manifest?watches_dir=demo/api-watches"
 curl "http://localhost:8000/watches?watches_dir=demo/api-watches&enabled=true"
 curl -X PATCH "http://localhost:8000/watches/$WATCH_ID" \

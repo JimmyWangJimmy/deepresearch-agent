@@ -19,6 +19,8 @@ from research_operator.runtime.monitoring import (
     list_watches,
     save_watch,
     summarize_watches,
+    WATCH_SORT_FIELDS,
+    sort_watches,
     update_watch_enabled,
 )
 from research_operator.runtime.provider_registry import ProviderConfigurationError, ProviderRegistry
@@ -296,8 +298,11 @@ def create_watch(request: WatchRequest) -> dict:
 
 
 @app.get("/watches")
-def get_watches(watches_dir: str = ".dra/watches", enabled: bool | None = None) -> dict[str, list[dict]]:
+def get_watches(watches_dir: str = ".dra/watches", enabled: bool | None = None, sort_by: str = "created_at_desc") -> dict[str, list[dict]]:
+    if sort_by not in WATCH_SORT_FIELDS:
+        raise HTTPException(status_code=400, detail=f"Unsupported sort_by: {sort_by}")
     watches = filter_watches_by_enabled(list_watches(Path(watches_dir)), enabled)
+    watches = sort_watches(watches, sort_by=sort_by)
     return {"watches": [item.model_dump(mode="json") for item in watches]}
 
 

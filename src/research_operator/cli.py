@@ -24,6 +24,8 @@ from research_operator.runtime.monitoring import (
     list_watches,
     save_watch,
     summarize_watches,
+    WATCH_SORT_FIELDS,
+    sort_watches,
     update_watch_enabled,
 )
 from research_operator.runtime.provider_registry import ProviderConfigurationError, ProviderRegistry
@@ -715,11 +717,17 @@ def watch_list(
         "--disabled-only",
         help="Only list disabled watches.",
     ),
+    sort_by: str = typer.Option(
+        "created_at_desc",
+        "--sort-by",
+        help=f"Sort order: {', '.join(WATCH_SORT_FIELDS)}.",
+    ),
 ) -> None:
     if enabled_only and disabled_only:
         raise typer.BadParameter("--enabled-only and --disabled-only cannot be used together.")
     specs = list_due_watches(watches_dir) if due_only else list_watches(watches_dir)
     specs = filter_watches_by_enabled(specs, True if enabled_only else False if disabled_only else None)
+    specs = sort_watches(specs, sort_by=sort_by)
     if json_output:
         typer.echo(json.dumps([spec.model_dump(mode="json") for spec in specs], indent=2, ensure_ascii=False))
         return

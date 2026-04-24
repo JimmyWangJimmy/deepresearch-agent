@@ -349,6 +349,15 @@ def test_watch_list_filters_enabled_state_via_api(tmp_path):
     assert summary_payload["watch_count"] == 1
     assert summary_payload["disabled_count"] == 1
 
+    sorted_watches = client.get(
+        "/watches",
+        params={"watches_dir": str(watches_dir), "sort_by": "interval_desc"},
+    )
+    assert sorted_watches.status_code == 200
+    sorted_payload = sorted_watches.json()["watches"]
+    intervals = [item["interval_minutes"] for item in sorted_payload]
+    assert intervals == sorted(intervals, reverse=True)
+
 
 def test_watch_delete_via_api(tmp_path):
     watch_file = tmp_path / "delete-api-watch.txt"

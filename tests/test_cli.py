@@ -954,6 +954,15 @@ def test_watch_list_filters_enabled_state(tmp_path):
     assert summary_payload["watch_count"] == 1
     assert summary_payload["disabled_count"] == 1
 
+    sorted_watches = runner.invoke(
+        app,
+        ["watch", "list", "--json", "--sort-by", "interval_desc", "--watches-dir", str(tmp_path / "watches")],
+    )
+    assert sorted_watches.exit_code == 0
+    sorted_payload = json.loads(sorted_watches.stdout)
+    intervals = [item["interval_minutes"] for item in sorted_payload]
+    assert intervals == sorted(intervals, reverse=True)
+
 
 def test_watch_delete_removes_watch(tmp_path):
     watch_file = tmp_path / "delete-watch.txt"

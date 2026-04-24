@@ -23,6 +23,15 @@ from research_operator.schemas import (
     WatchSpec,
 )
 
+WATCH_SORT_FIELDS = {
+    "created_at_desc": ("created_at", True),
+    "created_at_asc": ("created_at", False),
+    "next_run_at_desc": ("next_run_at", True),
+    "next_run_at_asc": ("next_run_at", False),
+    "interval_desc": ("interval_minutes", True),
+    "interval_asc": ("interval_minutes", False),
+}
+
 
 def ensure_watches_dir(watches_dir: Path | None = None) -> Path:
     path = watches_dir or AppConfig().watches_dir
@@ -77,6 +86,19 @@ def filter_watches_by_enabled(specs: list[WatchSpec], enabled: bool | None = Non
     if enabled is None:
         return specs
     return [spec for spec in specs if spec.enabled is enabled]
+
+
+def sort_watches(specs: list[WatchSpec], sort_by: str = "created_at_desc") -> list[WatchSpec]:
+    field, reverse = WATCH_SORT_FIELDS.get(sort_by, WATCH_SORT_FIELDS["created_at_desc"])
+    return sorted(specs, key=lambda spec: watch_sort_key(spec, field), reverse=reverse)
+
+
+def watch_sort_key(spec: WatchSpec, field: str):
+    if field == "next_run_at":
+        return spec.next_run_at.isoformat() if spec.next_run_at else ""
+    if field == "interval_minutes":
+        return spec.interval_minutes
+    return spec.created_at.isoformat()
 
 
 def inspect_watch(watch_id: str, watches_dir: Path | None = None) -> dict:

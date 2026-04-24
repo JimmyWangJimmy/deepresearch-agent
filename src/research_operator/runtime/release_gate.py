@@ -71,7 +71,7 @@ def check_provider_breadth() -> GateCheck:
 def check_cli_surface(repo_root: Path) -> GateCheck:
     cli_path = repo_root / "src" / "research_operator" / "cli.py"
     text = cli_path.read_text(encoding="utf-8")
-    required_tokens = ["def run(", "def verify(", "def export(", "format == \"all\"", "runs-summary", "--task-type", "--task-contains", "--has-warnings/--no-has-warnings", "--min-quality-score", "--max-quality-score", "--min-average-evidence-score", "--max-average-evidence-score", "--min-source-count", "--max-source-count", "--min-event-count", "--max-event-count", "--min-entity-count", "--max-entity-count", "--sort-by", "--limit", "def providers(", "def runs(", "def quality(", "def doctor("]
+    required_tokens = ["def run(", "def verify(", "def export(", "format == \"all\"", "runs-summary", "--task-type", "--task-contains", "--has-warnings/--no-has-warnings", "--has-deliverables/--no-has-deliverables", "--min-quality-score", "--max-quality-score", "--min-average-evidence-score", "--max-average-evidence-score", "--min-source-count", "--max-source-count", "--min-event-count", "--max-event-count", "--min-entity-count", "--max-entity-count", "--sort-by", "deliverables_desc", "--limit", "def providers(", "def runs(", "def quality(", "def doctor("]
     missing = [token for token in required_tokens if token not in text]
     passed = not missing
     detail = "cli surface complete" if passed else f"missing CLI commands: {', '.join(missing)}"

@@ -14,6 +14,8 @@ RUN_SORT_FIELDS = {
     "quality_asc": ("quality_score", False),
     "source_count_desc": ("source_count", True),
     "source_count_asc": ("source_count", False),
+    "deliverables_desc": ("deliverables", True),
+    "deliverables_asc": ("deliverables", False),
 }
 
 
@@ -189,6 +191,8 @@ def sort_key_for_payload(payload: dict, artifacts_dir: Path, field: str) -> Any:
         return read_run_quality_score(run_dir)
     if field == "source_count":
         return read_run_source_count(run_dir)
+    if field == "deliverables":
+        return 1 if run_has_deliverables(run_dir) else 0
     return payload.get("created_at", "")
 
 

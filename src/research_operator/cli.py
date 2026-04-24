@@ -233,7 +233,7 @@ def runs(
     sort_by: str = typer.Option(
         "created_at_desc",
         "--sort-by",
-        help=f"Sort order: {', '.join(RUN_SORT_FIELDS)}.",
+        help=f"Sort order: {', '.join(RUN_SORT_FIELDS)}. Use deliverables_desc to prioritize complete runs.",
     ),
     limit: int | None = typer.Option(
         None,

@@ -163,6 +163,22 @@ def test_runs_endpoint_filters_by_task_type_and_limit(tmp_path):
     missing_deliverable_payload = missing_deliverable_runs.json()["runs"]
     assert [item["run_id"] for item in missing_deliverable_payload] == [low_quality_run_id]
 
+    deliverables_asc = client.get(
+        "/runs",
+        params={"artifacts_dir": str(tmp_path), "sort_by": "deliverables_asc"},
+    )
+    assert deliverables_asc.status_code == 200
+    deliverables_asc_payload = deliverables_asc.json()["runs"]
+    assert deliverables_asc_payload[0]["run_id"] == low_quality_run_id
+
+    deliverables_desc = client.get(
+        "/runs",
+        params={"artifacts_dir": str(tmp_path), "sort_by": "deliverables_desc"},
+    )
+    assert deliverables_desc.status_code == 200
+    deliverables_desc_payload = deliverables_desc.json()["runs"]
+    assert (tmp_path / deliverables_desc_payload[0]["run_id"] / "delivery_bundle.zip").exists()
+
     high_quality = client.get(
         "/runs",
         params={"artifacts_dir": str(tmp_path), "min_quality_score": 0.75},

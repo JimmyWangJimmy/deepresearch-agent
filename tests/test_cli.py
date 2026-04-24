@@ -149,6 +149,22 @@ def test_runs_filters_by_task_type_and_limit(tmp_path):
     missing_deliverable_payload = json.loads(missing_deliverable_runs.stdout)
     assert [item["run_id"] for item in missing_deliverable_payload] == [low_quality_payload["run_id"]]
 
+    deliverables_asc = runner.invoke(
+        app,
+        ["runs", "--artifacts-dir", str(tmp_path), "--sort-by", "deliverables_asc", "--json"],
+    )
+    assert deliverables_asc.exit_code == 0
+    deliverables_asc_payload = json.loads(deliverables_asc.stdout)
+    assert deliverables_asc_payload[0]["run_id"] == low_quality_payload["run_id"]
+
+    deliverables_desc = runner.invoke(
+        app,
+        ["runs", "--artifacts-dir", str(tmp_path), "--sort-by", "deliverables_desc", "--json"],
+    )
+    assert deliverables_desc.exit_code == 0
+    deliverables_desc_payload = json.loads(deliverables_desc.stdout)
+    assert (tmp_path / deliverables_desc_payload[0]["run_id"] / "delivery_bundle.zip").exists()
+
     high_quality = runner.invoke(
         app,
         ["runs", "--artifacts-dir", str(tmp_path), "--min-quality-score", "0.75", "--json"],

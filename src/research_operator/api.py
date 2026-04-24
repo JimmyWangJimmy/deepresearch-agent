@@ -79,20 +79,9 @@ def providers() -> dict[str, list[str]]:
 
 @app.get("/doctor")
 def doctor(artifacts_dir: str = "artifacts") -> dict:
-    from research_operator.runtime.doctor import run_doctor
+    from research_operator.runtime.doctor import build_doctor_report
 
-    checks = run_doctor(Path(artifacts_dir))
-    return {
-        "ready": all(item.passed for item in checks),
-        "checks": [
-            {
-                "name": item.name,
-                "passed": item.passed,
-                "detail": item.detail,
-            }
-            for item in checks
-        ],
-    }
+    return build_doctor_report(Path(artifacts_dir))
 
 
 @app.post("/runs")

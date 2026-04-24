@@ -29,6 +29,9 @@ def test_doctor_endpoint(tmp_path):
     assert response.status_code == 200
     payload = response.json()
     assert "checks" in payload
+    assert payload["check_count"] == len(payload["checks"])
+    assert payload["passed_count"] + payload["failed_count"] == payload["check_count"]
+    assert payload["status"] in {"ready", "blocked"}
     assert any(item["name"] == "artifacts_dir" for item in payload["checks"])
 
 

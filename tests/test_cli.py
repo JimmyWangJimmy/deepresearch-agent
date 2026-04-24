@@ -994,6 +994,10 @@ def test_doctor_reports_environment_status(tmp_path, monkeypatch):
     assert result.exit_code == 0
     payload = json.loads(result.stdout)
     assert payload["ready"] is False
+    assert payload["status"] == "blocked"
+    assert payload["check_count"] == 3
+    assert payload["passed_count"] == 2
+    assert payload["failed_count"] == 1
     checks = {item["name"]: item for item in payload["checks"]}
     assert checks["artifacts_dir"]["passed"] is True
     assert checks["providers"]["passed"] is True

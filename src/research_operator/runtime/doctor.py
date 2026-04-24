@@ -22,6 +22,27 @@ def run_doctor(artifacts_dir: Path) -> list[DoctorCheck]:
     ]
 
 
+def build_doctor_report(artifacts_dir: Path) -> dict[str, object]:
+    checks = run_doctor(artifacts_dir)
+    passed_count = sum(1 for item in checks if item.passed)
+    failed_count = len(checks) - passed_count
+    return {
+        "ready": failed_count == 0,
+        "status": "ready" if failed_count == 0 else "blocked",
+        "check_count": len(checks),
+        "passed_count": passed_count,
+        "failed_count": failed_count,
+        "checks": [
+            {
+                "name": item.name,
+                "passed": item.passed,
+                "detail": item.detail,
+            }
+            for item in checks
+        ],
+    }
+
+
 def check_artifacts_dir(artifacts_dir: Path) -> DoctorCheck:
     try:
         artifacts_dir.mkdir(parents=True, exist_ok=True)

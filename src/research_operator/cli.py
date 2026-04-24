@@ -10,7 +10,7 @@ from rich.panel import Panel
 from rich.table import Table
 
 from research_operator.config import AppConfig
-from research_operator.runtime.doctor import run_doctor
+from research_operator.runtime.doctor import build_doctor_report
 from research_operator.runtime.engine import execute_task
 from research_operator.runtime.history import RUN_SORT_FIELDS, list_run_manifests, summarize_run_manifests
 from research_operator.runtime.monitoring import (
@@ -515,20 +515,16 @@ def doctor(
         help="Print doctor checks as JSON.",
     ),
 ) -> None:
-    checks = run_doctor(artifacts_dir)
-    payload = [
-        {"name": item.name, "passed": item.passed, "detail": item.detail}
-        for item in checks
-    ]
+    report = build_doctor_report(artifacts_dir)
     if json_output:
-        typer.echo(json.dumps({"ready": all(item["passed"] for item in payload), "checks": payload}, indent=2))
+        typer.echo(json.dumps(report, indent=2))
         return
 
     table = Table(title="Doctor")
     table.add_column("Check")
     table.add_column("Passed")
     table.add_column("Detail")
-    for item in payload:
+    for item in report["checks"]:
         table.add_row(item["name"], str(item["passed"]), item["detail"])
     console.print(table)
 

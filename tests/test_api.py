@@ -95,6 +95,31 @@ def test_create_and_fetch_run_via_api(tmp_path):
     assert any(item["name"] == "delivery_bundle" for item in verification_payload["checks"])
 
 
+def test_runs_endpoint_filters_by_task_type_and_limit(tmp_path):
+    source_file = tmp_path / "funding.txt"
+    source_file.write_text("2026年4月20日，星海机器人公司完成2亿元人民币融资。", encoding="utf-8")
+
+    created_research = client.post(
+        "/runs",
+        json={"task": "监控AI新闻", "artifacts_dir": str(tmp_path)},
+    )
+    created_file = client.post(
+        "/runs",
+        json={"task": "分析这个文件并提取要点", "files": [str(source_file)], "artifacts_dir": str(tmp_path)},
+    )
+    assert created_research.status_code == 200
+    assert created_file.status_code == 200
+
+    filtered = client.get(
+        "/runs",
+        params={"artifacts_dir": str(tmp_path), "task_type": "file_intelligence", "limit": 1},
+    )
+    assert filtered.status_code == 200
+    payload = filtered.json()["runs"]
+    assert len(payload) == 1
+    assert payload[0]["plan"]["task_type"] == "file_intelligence"
+
+
 def test_api_reports_provider_configuration_errors(tmp_path, monkeypatch):
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     response = client.post(

@@ -8,6 +8,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from research_operator.runtime.engine import execute_task
+from research_operator.runtime.history import list_run_manifests
 from research_operator.runtime.monitoring import (
     build_watch_sources,
     delete_watch,
@@ -22,7 +23,7 @@ from research_operator.runtime.monitoring import (
 from research_operator.runtime.provider_registry import ProviderConfigurationError, ProviderRegistry
 from research_operator.runtime.release_gate import run_release_gate
 from research_operator.runtime.verification import verify_run_dir
-from research_operator.schemas import ProviderKind, WatchSpec
+from research_operator.schemas import ProviderKind, TaskType, WatchSpec
 
 
 app = FastAPI(title="DeepResearch Agent API", version="0.1.0")
@@ -101,10 +102,12 @@ def create_run(request: RunRequest) -> dict:
 
 
 @app.get("/runs")
-def list_runs(artifacts_dir: str = "artifacts") -> dict[str, list[dict]]:
-    base = Path(artifacts_dir)
-    manifests = sorted(base.glob("*/run_manifest.json"), reverse=True)
-    items = [json.loads(path.read_text(encoding="utf-8")) for path in manifests]
+def list_runs(
+    artifacts_dir: str = "artifacts",
+    task_type: TaskType | None = None,
+    limit: int | None = None,
+) -> dict[str, list[dict]]:
+    items = list_run_manifests(Path(artifacts_dir), task_type=task_type, limit=limit)
     return {"runs": items}
 
 

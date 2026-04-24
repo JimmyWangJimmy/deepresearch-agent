@@ -127,6 +127,7 @@ Then inspect and download:
 ```bash
 RUN_ID=<paste_run_id>
 curl "http://localhost:8000/doctor?artifacts_dir=demo/api-artifacts"
+curl "http://localhost:8000/runs?artifacts_dir=demo/api-artifacts&task_type=file_intelligence&limit=1"
 curl "http://localhost:8000/runs/$RUN_ID/quality?artifacts_dir=demo/api-artifacts"
 curl "http://localhost:8000/runs/$RUN_ID/deliverables?artifacts_dir=demo/api-artifacts"
 curl "http://localhost:8000/runs/$RUN_ID/delivery-manifest?artifacts_dir=demo/api-artifacts"

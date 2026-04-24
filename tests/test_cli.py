@@ -84,6 +84,30 @@ def test_inspect_reads_manifest(tmp_path):
     assert inspected["run_id"] == payload["run_id"]
 
 
+def test_runs_filters_by_task_type_and_limit(tmp_path):
+    first = runner.invoke(
+        app,
+        ["run", "监控AI新闻", "--artifacts-dir", str(tmp_path), "--json"],
+    )
+    second_file = tmp_path / "funding.txt"
+    second_file.write_text("2026年4月20日，星海机器人公司完成2亿元人民币融资。", encoding="utf-8")
+    second = runner.invoke(
+        app,
+        ["run", "分析这个文件并提取要点", "--file", str(second_file), "--artifacts-dir", str(tmp_path), "--json"],
+    )
+    assert first.exit_code == 0
+    assert second.exit_code == 0
+
+    filtered = runner.invoke(
+        app,
+        ["runs", "--artifacts-dir", str(tmp_path), "--task-type", "file_intelligence", "--limit", "1", "--json"],
+    )
+    assert filtered.exit_code == 0
+    payload = json.loads(filtered.stdout)
+    assert len(payload) == 1
+    assert payload[0]["plan"]["task_type"] == "file_intelligence"
+
+
 def test_verify_checks_run_integrity(tmp_path):
     source_file = tmp_path / "verify.txt"
     source_file.write_text("2026年4月20日，星海机器人公司完成2亿元人民币融资。", encoding="utf-8")

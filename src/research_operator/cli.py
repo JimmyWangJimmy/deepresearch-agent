@@ -12,6 +12,7 @@ from rich.table import Table
 from research_operator.config import AppConfig
 from research_operator.runtime.doctor import run_doctor
 from research_operator.runtime.engine import execute_task
+from research_operator.runtime.history import list_run_manifests
 from research_operator.runtime.monitoring import (
     build_watch_sources,
     delete_watch,
@@ -27,7 +28,7 @@ from research_operator.runtime.monitoring import (
 from research_operator.runtime.provider_registry import ProviderConfigurationError, ProviderRegistry
 from research_operator.runtime.release_gate import run_release_gate
 from research_operator.runtime.verification import verify_run_dir
-from research_operator.schemas import ProviderKind, WatchSpec
+from research_operator.schemas import ProviderKind, TaskType, WatchSpec
 
 app = typer.Typer(help="DeepResearch Agent CLI")
 watch_app = typer.Typer(help="Create and execute recurring watch definitions.")
@@ -136,17 +137,24 @@ def runs(
         "--artifacts-dir",
         help="Directory that stores run artifacts.",
     ),
+    task_type: TaskType | None = typer.Option(
+        None,
+        "--task-type",
+        help="Optional task type filter.",
+    ),
+    limit: int | None = typer.Option(
+        None,
+        "--limit",
+        min=1,
+        help="Optional limit for returned runs.",
+    ),
     json_output: bool = typer.Option(
         False,
         "--json",
         help="Print runs as JSON.",
     ),
 ) -> None:
-    manifests = sorted(artifacts_dir.glob("*/run_manifest.json"), reverse=True)
-    payloads = [
-        json.loads(manifest_path.read_text(encoding="utf-8"))
-        for manifest_path in manifests
-    ]
+    payloads = list_run_manifests(artifacts_dir, task_type=task_type, limit=limit)
 
     if json_output:
         typer.echo(json.dumps(payloads, indent=2, ensure_ascii=False))

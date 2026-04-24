@@ -760,8 +760,8 @@ def watch_list(
     specs = filter_watches_by_enabled(specs, True if enabled_only else False if disabled_only else None)
     specs = filter_watches_by_webhook(specs, has_webhook)
     specs = filter_watches_by_deliverables(specs, has_deliverables, watches_dir)
-    specs = filter_watches_by_last_run_age(specs, min_last_run_age_minutes, max_last_run_age_minutes)
     try:
+        specs = filter_watches_by_last_run_age(specs, min_last_run_age_minutes, max_last_run_age_minutes)
         specs = filter_watches_by_status(specs, status, watches_dir)
     except ValueError as exc:
         raise typer.BadParameter(str(exc)) from exc
@@ -846,8 +846,8 @@ def watch_summary(
     specs = filter_watches_by_enabled(specs, True if enabled_only else False if disabled_only else None)
     specs = filter_watches_by_webhook(specs, has_webhook)
     specs = filter_watches_by_deliverables(specs, has_deliverables, watches_dir)
-    specs = filter_watches_by_last_run_age(specs, min_last_run_age_minutes, max_last_run_age_minutes)
     try:
+        specs = filter_watches_by_last_run_age(specs, min_last_run_age_minutes, max_last_run_age_minutes)
         specs = filter_watches_by_status(specs, status, watches_dir)
     except ValueError as exc:
         raise typer.BadParameter(str(exc)) from exc

@@ -349,6 +349,17 @@ def test_watch_lifecycle_via_api(tmp_path):
     assert status_summary_payload["recently_run_count"] == 1
     assert status_summary_payload["status_counts"]["changed"] == 1
 
+    invalid_age_range = client.get(
+        "/watches",
+        params={
+            "watches_dir": str(watches_dir),
+            "min_last_run_age_minutes": 10,
+            "max_last_run_age_minutes": 5,
+        },
+    )
+    assert invalid_age_range.status_code == 400
+    assert "min_last_run_age_minutes cannot be greater" in invalid_age_range.json()["detail"]
+
     disabled = client.patch(
         f"/watches/{watch_id}",
         json={

@@ -321,7 +321,10 @@ def get_watches(
     watches = filter_watches_by_enabled(list_watches(Path(watches_dir)), enabled)
     watches = filter_watches_by_webhook(watches, has_webhook)
     watches = filter_watches_by_deliverables(watches, has_deliverables, Path(watches_dir))
-    watches = filter_watches_by_last_run_age(watches, min_last_run_age_minutes, max_last_run_age_minutes)
+    try:
+        watches = filter_watches_by_last_run_age(watches, min_last_run_age_minutes, max_last_run_age_minutes)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     watches = filter_watches_by_status(watches, status, Path(watches_dir))
     watches = sort_watches(watches, sort_by=sort_by)
     return {"watches": [watch_to_listing(item, Path(watches_dir)) for item in watches]}
@@ -342,7 +345,10 @@ def get_watches_summary(
     watches = filter_watches_by_enabled(list_watches(Path(watches_dir)), enabled)
     watches = filter_watches_by_webhook(watches, has_webhook)
     watches = filter_watches_by_deliverables(watches, has_deliverables, Path(watches_dir))
-    watches = filter_watches_by_last_run_age(watches, min_last_run_age_minutes, max_last_run_age_minutes)
+    try:
+        watches = filter_watches_by_last_run_age(watches, min_last_run_age_minutes, max_last_run_age_minutes)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     watches = filter_watches_by_status(watches, status, Path(watches_dir))
     return summarize_watches(watches, Path(watches_dir))
 

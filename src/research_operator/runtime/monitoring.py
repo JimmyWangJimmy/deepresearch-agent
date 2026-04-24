@@ -115,6 +115,7 @@ def filter_watches_by_last_run_age(
 ) -> list[WatchSpec]:
     if min_age_minutes is None and max_age_minutes is None:
         return specs
+    validate_watch_last_run_age_range(min_age_minutes, max_age_minutes)
     filtered: list[WatchSpec] = []
     for spec in specs:
         age = watch_last_run_age_minutes(spec)
@@ -126,6 +127,18 @@ def filter_watches_by_last_run_age(
             continue
         filtered.append(spec)
     return filtered
+
+
+def validate_watch_last_run_age_range(
+    min_age_minutes: float | None = None,
+    max_age_minutes: float | None = None,
+) -> None:
+    if min_age_minutes is not None and min_age_minutes < 0:
+        raise ValueError("min_last_run_age_minutes must be greater than or equal to 0.")
+    if max_age_minutes is not None and max_age_minutes < 0:
+        raise ValueError("max_last_run_age_minutes must be greater than or equal to 0.")
+    if min_age_minutes is not None and max_age_minutes is not None and min_age_minutes > max_age_minutes:
+        raise ValueError("min_last_run_age_minutes cannot be greater than max_last_run_age_minutes.")
 
 
 def filter_watches_by_status(

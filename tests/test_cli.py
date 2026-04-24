@@ -845,6 +845,23 @@ def test_watch_create_and_run_detects_changes(tmp_path):
     assert status_summary_payload["recently_run_count"] == 1
     assert status_summary_payload["status_counts"]["changed"] == 1
 
+    invalid_age_range = runner.invoke(
+        app,
+        [
+            "watch",
+            "list",
+            "--json",
+            "--min-last-run-age-minutes",
+            "10",
+            "--max-last-run-age-minutes",
+            "5",
+            "--watches-dir",
+            str(tmp_path / "watches"),
+        ],
+    )
+    assert invalid_age_range.exit_code != 0
+    assert "min_last_run_age_minutes cannot be greater" in invalid_age_range.output
+
     disabled = runner.invoke(
         app,
         [

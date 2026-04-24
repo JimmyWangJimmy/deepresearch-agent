@@ -153,6 +153,15 @@ def test_runs_filters_by_task_type_and_limit(tmp_path):
     assert missing_deliverable_payload[0]["has_deliverables"] is False
     assert missing_deliverable_payload[0]["created_age_minutes"] is not None
 
+    table_output = runner.invoke(
+        app,
+        ["runs", "--artifacts-dir", str(tmp_path), "--sort-by", "deliverables_asc"],
+    )
+    assert table_output.exit_code == 0
+    assert "Bundle" in table_output.stdout
+    assert "Age" in table_output.stdout
+    assert "no" in table_output.stdout
+
     deliverables_asc = runner.invoke(
         app,
         ["runs", "--artifacts-dir", str(tmp_path), "--sort-by", "deliverables_asc", "--json"],

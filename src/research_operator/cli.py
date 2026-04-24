@@ -293,13 +293,18 @@ def runs(
     table.add_column("Task Type")
     table.add_column("Task")
     table.add_column("Created At")
+    table.add_column("Age")
+    table.add_column("Bundle")
 
     for payload in payloads:
+        created_age = payload.get("created_age_minutes")
         table.add_row(
             payload["run_id"],
             payload["plan"]["task_type"],
             payload["task"],
             payload["created_at"],
+            str(created_age if created_age is not None else "unknown"),
+            "yes" if payload.get("has_deliverables") else "no",
         )
 
     console.print(table)

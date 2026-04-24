@@ -71,7 +71,7 @@ def check_provider_breadth() -> GateCheck:
 def check_cli_surface(repo_root: Path) -> GateCheck:
     cli_path = repo_root / "src" / "research_operator" / "cli.py"
     text = cli_path.read_text(encoding="utf-8")
-    required_tokens = ["def run(", "def export(", "def providers(", "def runs(", "def quality(", "def doctor("]
+    required_tokens = ["def run(", "def export(", "format == \"all\"", "def providers(", "def runs(", "def quality(", "def doctor("]
     missing = [token for token in required_tokens if token not in text]
     passed = not missing
     detail = "cli surface complete" if passed else f"missing CLI commands: {', '.join(missing)}"
@@ -133,7 +133,7 @@ def check_query_provider_diversity() -> GateCheck:
 def check_api_surface(repo_root: Path) -> GateCheck:
     api_path = repo_root / "src" / "research_operator" / "api.py"
     text = api_path.read_text(encoding="utf-8") if api_path.exists() else ""
-    required_tokens = ["/runs/{run_id}/deliverables", "/runs/{run_id}/quality", "/watches/{watch_id}"]
+    required_tokens = ["/runs/{run_id}/deliverables", "/runs/{run_id}/delivery-manifest", "/runs/{run_id}/quality", "/watches/{watch_id}"]
     missing = [token for token in required_tokens if token not in text]
     passed = api_path.exists() and not missing
     detail = "api surface present" if passed else f"missing API surface: {', '.join(missing)}"

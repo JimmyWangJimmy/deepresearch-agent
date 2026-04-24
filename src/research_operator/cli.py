@@ -182,7 +182,7 @@ def quality(
 @app.command()
 def export(
     run_id: str = typer.Argument(..., help="Run identifier to export."),
-    format: str = typer.Option(..., "--format", help="Export format: html, markdown, manifest, findings, sources, entities, entities_csv, events, events_csv, xlsx, chart, timeline_chart, pdf, bundle."),
+    format: str = typer.Option(..., "--format", help="Export format: html, markdown, manifest, findings, sources, entities, entities_csv, events, events_csv, xlsx, chart, timeline_chart, pdf, bundle, all."),
     artifacts_dir: Path = typer.Option(
         AppConfig().artifacts_dir,
         "--artifacts-dir",
@@ -213,6 +213,18 @@ def export(
         "events": run_dir / "events.json",
         "events_csv": run_dir / "events.csv",
     }
+    if format == "all":
+        if output is None:
+            raise typer.BadParameter("--output directory is required for format=all")
+        output.mkdir(parents=True, exist_ok=True)
+        exported: dict[str, str] = {}
+        for name, source_path in mapping.items():
+            if source_path.exists():
+                target_path = output / source_path.name
+                shutil.copyfile(source_path, target_path)
+                exported[name] = str(target_path)
+        typer.echo(json.dumps({"run_id": run_id, "exported": exported}, indent=2, ensure_ascii=False))
+        return
     if format not in mapping:
         raise typer.BadParameter(f"Unsupported export format: {format}")
     source_path = mapping[format]

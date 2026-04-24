@@ -96,6 +96,28 @@ def get_run_deliverables(run_id: str, artifacts_dir: str = "artifacts") -> dict:
     return {"run_id": run_id, "deliverables": deliverables}
 
 
+@app.get("/runs/{run_id}/delivery-manifest")
+def get_run_delivery_manifest(run_id: str, artifacts_dir: str = "artifacts") -> dict:
+    run_dir = require_run_dir(run_id, artifacts_dir)
+    mapping = artifact_mapping(run_dir)
+    manifest = {
+        "run_id": run_id,
+        "primary": {
+            "bundle": str(mapping["delivery_bundle"]),
+            "pdf_report": str(mapping["pdf_report"]),
+            "html_report": str(mapping["html_report"]),
+            "quality": str(mapping["quality"]),
+            "summary": str(mapping["summary"]),
+        },
+        "all": {
+            name: str(path)
+            for name, path in mapping.items()
+            if path.exists()
+        },
+    }
+    return manifest
+
+
 @app.get("/runs/{run_id}/quality")
 def get_run_quality(run_id: str, artifacts_dir: str = "artifacts") -> dict:
     run_dir = require_run_dir(run_id, artifacts_dir)

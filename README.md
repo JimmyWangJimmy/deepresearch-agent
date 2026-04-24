@@ -59,6 +59,7 @@ dra export <run_id> --format events_csv --output ./deliverables/events.csv
 dra export <run_id> --format xlsx --output ./deliverables/research.xlsx
 dra export <run_id> --format pdf --output ./deliverables/research_report.pdf
 dra export <run_id> --format bundle --output ./deliverables/delivery_bundle.zip
+dra export <run_id> --format all --output ./deliverables/all
 dra export <run_id> --format chart --output ./deliverables/source_scores.svg
 dra export <run_id> --format timeline_chart --output ./deliverables/event_timeline.svg
 dra watch create "OpenAI News" --task "监控OpenAI更新并生成摘要" --interval-minutes 60 --webhook-url https://example.com/hook --url https://openai.com/news/
@@ -131,7 +132,7 @@ dra runs
 dra providers
 dra doctor [--json]
 dra gate
-dra export <run_id> --format html|markdown|manifest|findings|sources|entities|entities_csv|events|events_csv|xlsx|chart|timeline_chart|pdf|bundle
+dra export <run_id> --format html|markdown|manifest|findings|sources|entities|entities_csv|events|events_csv|xlsx|chart|timeline_chart|pdf|bundle|all
 dra watch create "<name>" --task "<task>" --interval-minutes 60 [--webhook-url URL] [--file PATH] [--url URL]
 dra watch run <watch_id> [--force]
 dra watch inspect <watch_id>

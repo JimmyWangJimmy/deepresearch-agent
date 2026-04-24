@@ -66,6 +66,15 @@ def test_create_and_fetch_run_via_api(tmp_path):
     assert quality.status_code == 200
     assert quality.json()["score"] > 0
 
+    delivery_manifest = client.get(
+        f"/runs/{run_id}/delivery-manifest",
+        params={"artifacts_dir": str(tmp_path)},
+    )
+    assert delivery_manifest.status_code == 200
+    manifest_payload = delivery_manifest.json()
+    assert manifest_payload["primary"]["bundle"].endswith("delivery_bundle.zip")
+    assert "summary" in manifest_payload["all"]
+
 
 def test_api_reports_provider_configuration_errors(tmp_path, monkeypatch):
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)

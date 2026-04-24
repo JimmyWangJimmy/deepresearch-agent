@@ -113,6 +113,8 @@ def list_runs(
     max_source_count: int | None = None,
     min_event_count: int | None = None,
     max_event_count: int | None = None,
+    min_entity_count: int | None = None,
+    max_entity_count: int | None = None,
     limit: int | None = None,
 ) -> dict[str, list[dict]]:
     items = list_run_manifests(
@@ -126,6 +128,8 @@ def list_runs(
         max_source_count=max_source_count,
         min_event_count=min_event_count,
         max_event_count=max_event_count,
+        min_entity_count=min_entity_count,
+        max_entity_count=max_entity_count,
         limit=limit,
     )
     return {"runs": items}

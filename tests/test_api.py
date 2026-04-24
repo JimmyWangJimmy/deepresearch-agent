@@ -180,6 +180,18 @@ def test_runs_endpoint_filters_by_task_type_and_limit(tmp_path):
         for item in eventful_payload
     )
 
+    entityful = client.get(
+        "/runs",
+        params={"artifacts_dir": str(tmp_path), "min_entity_count": 1},
+    )
+    assert entityful.status_code == 200
+    entityful_payload = entityful.json()["runs"]
+    assert len(entityful_payload) >= 1
+    assert all(
+        json.loads((tmp_path / item["run_id"] / "quality.json").read_text(encoding="utf-8"))["entity_count"] >= 1
+        for item in entityful_payload
+    )
+
 
 def test_api_reports_provider_configuration_errors(tmp_path, monkeypatch):
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)

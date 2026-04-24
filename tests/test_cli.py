@@ -166,6 +166,18 @@ def test_runs_filters_by_task_type_and_limit(tmp_path):
         for item in eventful_payload
     )
 
+    entityful = runner.invoke(
+        app,
+        ["runs", "--artifacts-dir", str(tmp_path), "--min-entity-count", "1", "--json"],
+    )
+    assert entityful.exit_code == 0
+    entityful_payload = json.loads(entityful.stdout)
+    assert len(entityful_payload) >= 1
+    assert all(
+        json.loads((tmp_path / item["run_id"] / "quality.json").read_text(encoding="utf-8"))["entity_count"] >= 1
+        for item in entityful_payload
+    )
+
 
 def test_verify_checks_run_integrity(tmp_path):
     source_file = tmp_path / "verify.txt"

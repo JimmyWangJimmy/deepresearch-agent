@@ -190,6 +190,18 @@ def runs(
         min=0,
         help="Optional maximum structured event count filter.",
     ),
+    min_entity_count: int | None = typer.Option(
+        None,
+        "--min-entity-count",
+        min=0,
+        help="Optional minimum extracted entity count filter.",
+    ),
+    max_entity_count: int | None = typer.Option(
+        None,
+        "--max-entity-count",
+        min=0,
+        help="Optional maximum extracted entity count filter.",
+    ),
     limit: int | None = typer.Option(
         None,
         "--limit",
@@ -213,6 +225,8 @@ def runs(
         max_source_count=max_source_count,
         min_event_count=min_event_count,
         max_event_count=max_event_count,
+        min_entity_count=min_entity_count,
+        max_entity_count=max_entity_count,
         limit=limit,
     )
 

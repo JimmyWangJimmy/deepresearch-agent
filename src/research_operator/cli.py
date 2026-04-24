@@ -14,6 +14,7 @@ from research_operator.runtime.doctor import run_doctor
 from research_operator.runtime.engine import execute_task
 from research_operator.runtime.monitoring import (
     build_watch_sources,
+    delete_watch,
     execute_watch,
     filter_watches_by_enabled,
     inspect_watch,
@@ -520,6 +521,22 @@ def watch_set_enabled(
 ) -> None:
     spec = update_watch_enabled(watch_id, enabled=enabled, watches_dir=watches_dir)
     typer.echo(json.dumps(spec.model_dump(mode="json"), indent=2, ensure_ascii=False))
+
+
+@watch_app.command("delete")
+def watch_delete(
+    watch_id: str = typer.Argument(..., help="Watch identifier."),
+    watches_dir: Path = typer.Option(
+        AppConfig().watches_dir,
+        "--watches-dir",
+        help="Directory where watch definitions are stored.",
+    ),
+) -> None:
+    try:
+        payload = delete_watch(watch_id, watches_dir=watches_dir)
+    except FileNotFoundError as exc:
+        raise typer.BadParameter(str(exc)) from exc
+    typer.echo(json.dumps(payload, indent=2, ensure_ascii=False))
 
 
 @watch_app.command("list")

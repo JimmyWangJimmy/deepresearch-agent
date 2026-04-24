@@ -211,3 +211,29 @@ def test_watch_list_filters_enabled_state_via_api(tmp_path):
     payload = disabled_list.json()["watches"]
     assert len(payload) == 1
     assert payload[0]["watch_id"] == watch_id
+
+
+def test_watch_delete_via_api(tmp_path):
+    watch_file = tmp_path / "delete-api-watch.txt"
+    watch_file.write_text("版本一", encoding="utf-8")
+    watches_dir = tmp_path / "watches"
+
+    created = client.post(
+        "/watches",
+        json={
+            "name": "Delete API Watch",
+            "task": "删除 API watch",
+            "files": [str(watch_file)],
+            "watches_dir": str(watches_dir),
+        },
+    )
+    assert created.status_code == 200
+    watch_id = created.json()["watch_id"]
+
+    deleted = client.delete(f"/watches/{watch_id}", params={"watches_dir": str(watches_dir)})
+    assert deleted.status_code == 200
+    assert deleted.json()["watch_id"] == watch_id
+
+    listed = client.get("/watches", params={"watches_dir": str(watches_dir)})
+    assert listed.status_code == 200
+    assert listed.json()["watches"] == []

@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 from research_operator.runtime.engine import execute_task
 from research_operator.runtime.monitoring import (
     build_watch_sources,
+    delete_watch,
     execute_watch,
     filter_watches_by_enabled,
     inspect_watch,
@@ -235,6 +236,14 @@ def get_watch_delivery_manifest(watch_id: str, watches_dir: str = ".dra/watches"
 def update_watch(watch_id: str, request: WatchUpdateRequest) -> dict:
     spec = update_watch_enabled(watch_id, enabled=request.enabled, watches_dir=Path(request.watches_dir))
     return spec.model_dump(mode="json")
+
+
+@app.delete("/watches/{watch_id}")
+def remove_watch(watch_id: str, watches_dir: str = ".dra/watches") -> dict:
+    try:
+        return delete_watch(watch_id, Path(watches_dir))
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
 @app.post("/watches/{watch_id}/run")

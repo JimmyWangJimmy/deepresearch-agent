@@ -165,6 +165,7 @@ curl -X PATCH "http://localhost:8000/watches/$WATCH_ID" \
     "enabled": false,
     "watches_dir": "demo/api-watches"
   }'
+curl -X DELETE "http://localhost:8000/watches/$WATCH_ID?watches_dir=demo/api-watches"
 ```
 
 ## 6. Run With Docker

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import shutil
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -53,6 +54,14 @@ def update_watch_enabled(watch_id: str, enabled: bool, watches_dir: Path | None 
         spec.next_run_at = datetime.now(UTC) + timedelta(minutes=spec.interval_minutes)
     save_watch(spec, watches_dir)
     return spec
+
+
+def delete_watch(watch_id: str, watches_dir: Path | None = None) -> dict[str, str]:
+    watch_dir = ensure_watches_dir(watches_dir) / watch_id
+    if not watch_dir.exists():
+        raise FileNotFoundError(f"Watch not found: {watch_id}")
+    shutil.rmtree(watch_dir)
+    return {"watch_id": watch_id, "deleted": "true"}
 
 
 def list_watches(watches_dir: Path | None = None) -> list[WatchSpec]:

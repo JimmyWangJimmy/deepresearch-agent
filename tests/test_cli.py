@@ -818,6 +818,35 @@ def test_watch_list_filters_enabled_state(tmp_path):
     assert payload[0]["watch_id"] == watch_id
 
 
+def test_watch_delete_removes_watch(tmp_path):
+    watch_file = tmp_path / "delete-watch.txt"
+    watch_file.write_text("初始版本", encoding="utf-8")
+    create = runner.invoke(
+        app,
+        [
+            "watch",
+            "create",
+            "Delete Watch",
+            "--task",
+            "删除监控",
+            "--file",
+            str(watch_file),
+            "--watches-dir",
+            str(tmp_path / "watches"),
+        ],
+    )
+    assert create.exit_code == 0
+    watch_id = json.loads(create.stdout)["watch_id"]
+
+    deleted = runner.invoke(
+        app,
+        ["watch", "delete", watch_id, "--watches-dir", str(tmp_path / "watches")],
+    )
+    assert deleted.exit_code == 0
+    assert json.loads(deleted.stdout)["watch_id"] == watch_id
+    assert not (tmp_path / "watches" / watch_id).exists()
+
+
 def test_watch_posts_webhook_when_configured(tmp_path, monkeypatch):
     posted: dict[str, object] = {}
 

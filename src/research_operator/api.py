@@ -15,6 +15,7 @@ from research_operator.runtime.monitoring import (
     inspect_watch_delivery_manifest,
     list_watches,
     save_watch,
+    update_watch_enabled,
 )
 from research_operator.runtime.provider_registry import ProviderConfigurationError, ProviderRegistry
 from research_operator.runtime.release_gate import run_release_gate
@@ -47,6 +48,11 @@ class WatchRunRequest(BaseModel):
     artifacts_dir: str = "artifacts"
     watches_dir: str = ".dra/watches"
     force: bool = False
+
+
+class WatchUpdateRequest(BaseModel):
+    enabled: bool
+    watches_dir: str = ".dra/watches"
 
 
 @app.get("/health")
@@ -221,6 +227,12 @@ def get_watch(watch_id: str, watches_dir: str = ".dra/watches") -> dict:
 @app.get("/watches/{watch_id}/delivery-manifest")
 def get_watch_delivery_manifest(watch_id: str, watches_dir: str = ".dra/watches") -> dict:
     return inspect_watch_delivery_manifest(watch_id, Path(watches_dir))
+
+
+@app.patch("/watches/{watch_id}")
+def update_watch(watch_id: str, request: WatchUpdateRequest) -> dict:
+    spec = update_watch_enabled(watch_id, enabled=request.enabled, watches_dir=Path(request.watches_dir))
+    return spec.model_dump(mode="json")
 
 
 @app.post("/watches/{watch_id}/run")

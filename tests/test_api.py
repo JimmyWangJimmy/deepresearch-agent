@@ -156,3 +156,24 @@ def test_watch_lifecycle_via_api(tmp_path):
     assert manifest_payload["latest"]["run_id"] == executed.json()["new_run_id"]
     assert manifest_payload["primary"]["delivery_bundle"].endswith("delivery_bundle.zip")
     assert manifest_payload["notification"]["title"]
+
+    disabled = client.patch(
+        f"/watches/{watch_id}",
+        json={
+            "enabled": False,
+            "watches_dir": str(watches_dir),
+        },
+    )
+    assert disabled.status_code == 200
+    assert disabled.json()["enabled"] is False
+
+    reenabled = client.patch(
+        f"/watches/{watch_id}",
+        json={
+            "enabled": True,
+            "watches_dir": str(watches_dir),
+        },
+    )
+    assert reenabled.status_code == 200
+    assert reenabled.json()["enabled"] is True
+    assert reenabled.json()["next_run_at"] is not None

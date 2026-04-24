@@ -606,6 +606,37 @@ def test_watch_create_and_run_detects_changes(tmp_path):
     assert manifest_payload["primary"]["delivery_bundle"].endswith("delivery_bundle.zip")
     assert manifest_payload["notification"]["title"]
 
+    disabled = runner.invoke(
+        app,
+        [
+            "watch",
+            "set-enabled",
+            created["watch_id"],
+            "--disabled",
+            "--watches-dir",
+            str(tmp_path / "watches"),
+        ],
+    )
+    assert disabled.exit_code == 0
+    disabled_payload = json.loads(disabled.stdout)
+    assert disabled_payload["enabled"] is False
+
+    reenabled = runner.invoke(
+        app,
+        [
+            "watch",
+            "set-enabled",
+            created["watch_id"],
+            "--enabled",
+            "--watches-dir",
+            str(tmp_path / "watches"),
+        ],
+    )
+    assert reenabled.exit_code == 0
+    reenabled_payload = json.loads(reenabled.stdout)
+    assert reenabled_payload["enabled"] is True
+    assert reenabled_payload["next_run_at"] is not None
+
 
 def test_providers_lists_available_backends():
     result = runner.invoke(app, ["providers", "--json"])

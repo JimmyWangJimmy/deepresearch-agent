@@ -44,6 +44,17 @@ def load_watch(watch_id: str, watches_dir: Path | None = None) -> WatchSpec:
     return WatchSpec.model_validate(payload)
 
 
+def update_watch_enabled(watch_id: str, enabled: bool, watches_dir: Path | None = None) -> WatchSpec:
+    spec = load_watch(watch_id, watches_dir)
+    spec.enabled = enabled
+    if not enabled:
+        spec.next_run_at = None
+    elif spec.next_run_at is None:
+        spec.next_run_at = datetime.now(UTC) + timedelta(minutes=spec.interval_minutes)
+    save_watch(spec, watches_dir)
+    return spec
+
+
 def list_watches(watches_dir: Path | None = None) -> list[WatchSpec]:
     base = ensure_watches_dir(watches_dir)
     specs: list[WatchSpec] = []

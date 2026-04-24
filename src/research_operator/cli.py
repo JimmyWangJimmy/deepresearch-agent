@@ -20,6 +20,7 @@ from research_operator.runtime.monitoring import (
     list_due_watches,
     list_watches,
     save_watch,
+    update_watch_enabled,
 )
 from research_operator.runtime.provider_registry import ProviderConfigurationError, ProviderRegistry
 from research_operator.runtime.release_gate import run_release_gate
@@ -500,6 +501,24 @@ def watch_delivery_manifest(
 ) -> None:
     payload = inspect_watch_delivery_manifest(watch_id, watches_dir)
     typer.echo(json.dumps(payload, indent=2, ensure_ascii=False))
+
+
+@watch_app.command("set-enabled")
+def watch_set_enabled(
+    watch_id: str = typer.Argument(..., help="Watch identifier."),
+    enabled: bool = typer.Option(
+        True,
+        "--enabled/--disabled",
+        help="Enable or disable the watch.",
+    ),
+    watches_dir: Path = typer.Option(
+        AppConfig().watches_dir,
+        "--watches-dir",
+        help="Directory where watch definitions are stored.",
+    ),
+) -> None:
+    spec = update_watch_enabled(watch_id, enabled=enabled, watches_dir=watches_dir)
+    typer.echo(json.dumps(spec.model_dump(mode="json"), indent=2, ensure_ascii=False))
 
 
 @watch_app.command("list")

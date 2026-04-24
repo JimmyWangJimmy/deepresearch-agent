@@ -15,6 +15,7 @@ from research_operator.runtime.engine import execute_task
 from research_operator.runtime.monitoring import (
     build_watch_sources,
     execute_watch,
+    filter_watches_by_enabled,
     inspect_watch,
     inspect_watch_delivery_manifest,
     list_due_watches,
@@ -538,8 +539,21 @@ def watch_list(
         "--due-only",
         help="Only list watches that are due.",
     ),
+    enabled_only: bool = typer.Option(
+        False,
+        "--enabled-only",
+        help="Only list enabled watches.",
+    ),
+    disabled_only: bool = typer.Option(
+        False,
+        "--disabled-only",
+        help="Only list disabled watches.",
+    ),
 ) -> None:
+    if enabled_only and disabled_only:
+        raise typer.BadParameter("--enabled-only and --disabled-only cannot be used together.")
     specs = list_due_watches(watches_dir) if due_only else list_watches(watches_dir)
+    specs = filter_watches_by_enabled(specs, True if enabled_only else False if disabled_only else None)
     if json_output:
         typer.echo(json.dumps([spec.model_dump(mode="json") for spec in specs], indent=2, ensure_ascii=False))
         return

@@ -11,6 +11,7 @@ from research_operator.runtime.engine import execute_task
 from research_operator.runtime.monitoring import (
     build_watch_sources,
     execute_watch,
+    filter_watches_by_enabled,
     inspect_watch,
     inspect_watch_delivery_manifest,
     list_watches,
@@ -215,8 +216,9 @@ def create_watch(request: WatchRequest) -> dict:
 
 
 @app.get("/watches")
-def get_watches(watches_dir: str = ".dra/watches") -> dict[str, list[dict]]:
-    return {"watches": [item.model_dump(mode="json") for item in list_watches(Path(watches_dir))]}
+def get_watches(watches_dir: str = ".dra/watches", enabled: bool | None = None) -> dict[str, list[dict]]:
+    watches = filter_watches_by_enabled(list_watches(Path(watches_dir)), enabled)
+    return {"watches": [item.model_dump(mode="json") for item in watches]}
 
 
 @app.get("/watches/{watch_id}")

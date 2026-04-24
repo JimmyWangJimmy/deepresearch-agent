@@ -177,3 +177,37 @@ def test_watch_lifecycle_via_api(tmp_path):
     assert reenabled.status_code == 200
     assert reenabled.json()["enabled"] is True
     assert reenabled.json()["next_run_at"] is not None
+
+
+def test_watch_list_filters_enabled_state_via_api(tmp_path):
+    watch_file = tmp_path / "watch-enabled.txt"
+    watch_file.write_text("版本一", encoding="utf-8")
+    watches_dir = tmp_path / "watches"
+
+    created = client.post(
+        "/watches",
+        json={
+            "name": "Filtered Watch",
+            "task": "监控过滤状态",
+            "files": [str(watch_file)],
+            "watches_dir": str(watches_dir),
+        },
+    )
+    assert created.status_code == 200
+    watch_id = created.json()["watch_id"]
+
+    disabled = client.patch(
+        f"/watches/{watch_id}",
+        json={"enabled": False, "watches_dir": str(watches_dir)},
+    )
+    assert disabled.status_code == 200
+
+    enabled_list = client.get("/watches", params={"watches_dir": str(watches_dir), "enabled": True})
+    assert enabled_list.status_code == 200
+    assert enabled_list.json()["watches"] == []
+
+    disabled_list = client.get("/watches", params={"watches_dir": str(watches_dir), "enabled": False})
+    assert disabled_list.status_code == 200
+    payload = disabled_list.json()["watches"]
+    assert len(payload) == 1
+    assert payload[0]["watch_id"] == watch_id

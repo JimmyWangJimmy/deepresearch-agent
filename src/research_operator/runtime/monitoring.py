@@ -64,6 +64,12 @@ def list_watches(watches_dir: Path | None = None) -> list[WatchSpec]:
     return specs
 
 
+def filter_watches_by_enabled(specs: list[WatchSpec], enabled: bool | None = None) -> list[WatchSpec]:
+    if enabled is None:
+        return specs
+    return [spec for spec in specs if spec.enabled is enabled]
+
+
 def inspect_watch(watch_id: str, watches_dir: Path | None = None) -> dict:
     watch_dir = ensure_watches_dir(watches_dir) / watch_id
     spec = load_watch(watch_id, watches_dir)

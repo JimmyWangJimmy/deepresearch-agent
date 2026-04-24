@@ -768,6 +768,56 @@ def test_watch_list_due_only_filters_not_due(tmp_path):
     assert json.loads(due_list.stdout) == []
 
 
+def test_watch_list_filters_enabled_state(tmp_path):
+    watch_file = tmp_path / "stateful-watch.txt"
+    watch_file.write_text("初始版本", encoding="utf-8")
+    create = runner.invoke(
+        app,
+        [
+            "watch",
+            "create",
+            "Stateful Watch",
+            "--task",
+            "监控启停状态",
+            "--file",
+            str(watch_file),
+            "--watches-dir",
+            str(tmp_path / "watches"),
+        ],
+    )
+    assert create.exit_code == 0
+    watch_id = json.loads(create.stdout)["watch_id"]
+
+    disabled = runner.invoke(
+        app,
+        [
+            "watch",
+            "set-enabled",
+            watch_id,
+            "--disabled",
+            "--watches-dir",
+            str(tmp_path / "watches"),
+        ],
+    )
+    assert disabled.exit_code == 0
+
+    enabled_list = runner.invoke(
+        app,
+        ["watch", "list", "--json", "--enabled-only", "--watches-dir", str(tmp_path / "watches")],
+    )
+    assert enabled_list.exit_code == 0
+    assert json.loads(enabled_list.stdout) == []
+
+    disabled_list = runner.invoke(
+        app,
+        ["watch", "list", "--json", "--disabled-only", "--watches-dir", str(tmp_path / "watches")],
+    )
+    assert disabled_list.exit_code == 0
+    payload = json.loads(disabled_list.stdout)
+    assert len(payload) == 1
+    assert payload[0]["watch_id"] == watch_id
+
+
 def test_watch_posts_webhook_when_configured(tmp_path, monkeypatch):
     posted: dict[str, object] = {}
 

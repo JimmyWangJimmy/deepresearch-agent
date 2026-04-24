@@ -30,7 +30,7 @@ from research_operator.runtime.monitoring import (
     watch_to_listing,
 )
 from research_operator.runtime.provider_registry import ProviderConfigurationError, ProviderRegistry
-from research_operator.runtime.release_gate import run_release_gate
+from research_operator.runtime.release_gate import build_gate_report, run_release_gate
 from research_operator.runtime.verification import verify_run_dir
 from research_operator.schemas import ProviderKind, TaskType, WatchSpec
 
@@ -398,17 +398,7 @@ def run_watch(watch_id: str, request: WatchRunRequest) -> dict:
 @app.get("/gate")
 def gate() -> dict:
     report = run_release_gate(Path.cwd())
-    return {
-        "ready": report.ready,
-        "checks": [
-            {
-                "name": item.name,
-                "passed": item.passed,
-                "detail": item.detail,
-            }
-            for item in report.checks
-        ],
-    }
+    return build_gate_report(report)
 
 
 def require_run_dir(run_id: str, artifacts_dir: str) -> Path:

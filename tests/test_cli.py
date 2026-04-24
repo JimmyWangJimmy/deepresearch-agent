@@ -1455,6 +1455,9 @@ def test_gate_reports_blocked_state():
     assert result.exit_code in {0, 2}
     payload = json.loads(result.stdout)
     assert "ready" in payload
+    assert payload["status"] in {"ready", "blocked"}
+    assert payload["check_count"] == len(payload["checks"])
+    assert payload["passed_count"] + payload["failed_count"] == payload["check_count"]
     assert payload["checks"]
 
 

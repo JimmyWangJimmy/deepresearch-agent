@@ -35,7 +35,7 @@ from research_operator.runtime.monitoring import (
     watch_to_listing,
 )
 from research_operator.runtime.provider_registry import ProviderConfigurationError, ProviderRegistry
-from research_operator.runtime.release_gate import run_release_gate
+from research_operator.runtime.release_gate import build_gate_report, run_release_gate
 from research_operator.runtime.verification import verify_run_dir
 from research_operator.schemas import ProviderKind, TaskType, WatchSpec
 
@@ -538,17 +538,7 @@ def gate(
     ),
 ) -> None:
     report = run_release_gate(Path.cwd())
-    payload = {
-        "ready": report.ready,
-        "checks": [
-            {
-                "name": item.name,
-                "passed": item.passed,
-                "detail": item.detail,
-            }
-            for item in report.checks
-        ],
-    }
+    payload = build_gate_report(report)
     if json_output:
         typer.echo(json.dumps(payload, indent=2, ensure_ascii=False))
         raise typer.Exit(code=0 if report.ready else 2)

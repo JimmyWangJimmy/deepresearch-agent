@@ -38,6 +38,26 @@ def run_release_gate(repo_root: Path) -> GateReport:
     return GateReport(ready=all(item.passed for item in checks), checks=checks)
 
 
+def build_gate_report(report: GateReport) -> dict[str, object]:
+    passed_count = sum(1 for item in report.checks if item.passed)
+    failed_count = len(report.checks) - passed_count
+    return {
+        "ready": report.ready,
+        "status": "ready" if report.ready else "blocked",
+        "check_count": len(report.checks),
+        "passed_count": passed_count,
+        "failed_count": failed_count,
+        "checks": [
+            {
+                "name": item.name,
+                "passed": item.passed,
+                "detail": item.detail,
+            }
+            for item in report.checks
+        ],
+    }
+
+
 def check_tests(repo_root: Path) -> GateCheck:
     if os.environ.get("DRA_GATE_RUNNING") == "1":
         return GateCheck("tests", True, "skipped nested gate test run")

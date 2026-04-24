@@ -11,6 +11,7 @@ from research_operator.runtime.engine import execute_task
 from research_operator.runtime.monitoring import build_watch_sources, execute_watch, inspect_watch, list_watches, save_watch
 from research_operator.runtime.provider_registry import ProviderConfigurationError, ProviderRegistry
 from research_operator.runtime.release_gate import run_release_gate
+from research_operator.runtime.verification import verify_run_dir
 from research_operator.schemas import ProviderKind, WatchSpec
 
 
@@ -49,6 +50,24 @@ def health() -> dict[str, str]:
 @app.get("/providers")
 def providers() -> dict[str, list[str]]:
     return {"providers": ProviderRegistry().available()}
+
+
+@app.get("/doctor")
+def doctor(artifacts_dir: str = "artifacts") -> dict:
+    from research_operator.runtime.doctor import run_doctor
+
+    checks = run_doctor(Path(artifacts_dir))
+    return {
+        "ready": all(item.passed for item in checks),
+        "checks": [
+            {
+                "name": item.name,
+                "passed": item.passed,
+                "detail": item.detail,
+            }
+            for item in checks
+        ],
+    }
 
 
 @app.post("/runs")
@@ -132,6 +151,23 @@ def get_run_quality(run_id: str, artifacts_dir: str = "artifacts") -> dict:
     if not quality_path.exists():
         raise HTTPException(status_code=404, detail=f"Quality not found for run: {run_id}")
     return json.loads(quality_path.read_text(encoding="utf-8"))
+
+
+@app.get("/runs/{run_id}/verify")
+def verify_run(run_id: str, artifacts_dir: str = "artifacts") -> dict:
+    run_dir = require_run_dir(run_id, artifacts_dir)
+    report = verify_run_dir(run_dir)
+    return {
+        "ready": report.ready,
+        "checks": [
+            {
+                "name": item.name,
+                "passed": item.passed,
+                "detail": item.detail,
+            }
+            for item in report.checks
+        ],
+    }
 
 
 @app.get("/runs/{run_id}/deliverables/{artifact_name}")

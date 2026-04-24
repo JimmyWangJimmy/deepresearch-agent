@@ -84,6 +84,40 @@ def test_inspect_reads_manifest(tmp_path):
     assert inspected["run_id"] == payload["run_id"]
 
 
+def test_verify_checks_run_integrity(tmp_path):
+    source_file = tmp_path / "verify.txt"
+    source_file.write_text("2026年4月20日，星海机器人公司完成2亿元人民币融资。", encoding="utf-8")
+    run_result = runner.invoke(
+        app,
+        [
+            "run",
+            "验证研究交付物",
+            "--file",
+            str(source_file),
+            "--artifacts-dir",
+            str(tmp_path),
+            "--json",
+        ],
+    )
+    assert run_result.exit_code == 0
+    payload = json.loads(run_result.stdout)
+
+    verify_result = runner.invoke(
+        app,
+        [
+            "verify",
+            payload["run_id"],
+            "--artifacts-dir",
+            str(tmp_path),
+            "--json",
+        ],
+    )
+    assert verify_result.exit_code == 0
+    verification = json.loads(verify_result.stdout)
+    assert verification["ready"] is True
+    assert {item["name"] for item in verification["checks"]} >= {"core_artifacts", "delivery_bundle", "quality", "summary"}
+
+
 def test_export_copies_html_artifact(tmp_path):
     source_file = tmp_path / "evidence.md"
     source_file.write_text("# Title\n\nAlternative data signal from filings.", encoding="utf-8")

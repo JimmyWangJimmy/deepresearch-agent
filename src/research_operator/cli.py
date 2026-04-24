@@ -22,6 +22,7 @@ from research_operator.runtime.monitoring import (
 )
 from research_operator.runtime.provider_registry import ProviderConfigurationError, ProviderRegistry
 from research_operator.runtime.release_gate import run_release_gate
+from research_operator.runtime.verification import verify_run_dir
 from research_operator.schemas import ProviderKind, WatchSpec
 
 app = typer.Typer(help="DeepResearch Agent CLI")
@@ -177,6 +178,49 @@ def quality(
     if not quality_path.exists():
         raise typer.BadParameter(f"Quality artifact not found: {quality_path}")
     typer.echo(quality_path.read_text(encoding="utf-8"))
+
+
+@app.command()
+def verify(
+    run_id: str = typer.Argument(..., help="Run identifier to verify."),
+    artifacts_dir: Path = typer.Option(
+        AppConfig().artifacts_dir,
+        "--artifacts-dir",
+        help="Directory that stores run artifacts.",
+    ),
+    json_output: bool = typer.Option(
+        False,
+        "--json",
+        help="Print verification checks as JSON.",
+    ),
+) -> None:
+    run_dir = artifacts_dir / run_id
+    if not (run_dir / "run_manifest.json").exists():
+        raise typer.BadParameter(f"Run manifest not found: {run_dir / 'run_manifest.json'}")
+    report = verify_run_dir(run_dir)
+    payload = {
+        "ready": report.ready,
+        "checks": [
+            {
+                "name": item.name,
+                "passed": item.passed,
+                "detail": item.detail,
+            }
+            for item in report.checks
+        ],
+    }
+    if json_output:
+        typer.echo(json.dumps(payload, indent=2, ensure_ascii=False))
+        raise typer.Exit(code=0 if report.ready else 2)
+
+    table = Table(title="Verification")
+    table.add_column("Check")
+    table.add_column("Passed")
+    table.add_column("Detail")
+    for item in payload["checks"]:
+        table.add_row(item["name"], str(item["passed"]), item["detail"])
+    console.print(table)
+    raise typer.Exit(code=0 if report.ready else 2)
 
 
 @app.command()

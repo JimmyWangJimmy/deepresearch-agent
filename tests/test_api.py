@@ -22,6 +22,14 @@ def test_providers_endpoint():
     assert "wikipedia_search" in payload["providers"]
 
 
+def test_doctor_endpoint(tmp_path):
+    response = client.get("/doctor", params={"artifacts_dir": str(tmp_path)})
+    assert response.status_code == 200
+    payload = response.json()
+    assert "checks" in payload
+    assert any(item["name"] == "artifacts_dir" for item in payload["checks"])
+
+
 def test_create_and_fetch_run_via_api(tmp_path):
     source_file = tmp_path / "funding.txt"
     source_file.write_text("2026年4月20日，星海机器人公司完成2亿元人民币融资。", encoding="utf-8")
@@ -76,6 +84,15 @@ def test_create_and_fetch_run_via_api(tmp_path):
     assert "summary" in manifest_payload["all"]
     assert manifest_payload["highlights"]["top_sources"]
     assert manifest_payload["highlights"]["recent_events"]
+
+    verification = client.get(
+        f"/runs/{run_id}/verify",
+        params={"artifacts_dir": str(tmp_path)},
+    )
+    assert verification.status_code == 200
+    verification_payload = verification.json()
+    assert verification_payload["ready"] is True
+    assert any(item["name"] == "delivery_bundle" for item in verification_payload["checks"])
 
 
 def test_api_reports_provider_configuration_errors(tmp_path, monkeypatch):

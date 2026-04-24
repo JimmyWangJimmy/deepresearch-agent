@@ -142,6 +142,11 @@ def runs(
         "--task-type",
         help="Optional task type filter.",
     ),
+    task_contains: str | None = typer.Option(
+        None,
+        "--task-contains",
+        help="Optional substring filter applied to the task text.",
+    ),
     limit: int | None = typer.Option(
         None,
         "--limit",
@@ -154,7 +159,7 @@ def runs(
         help="Print runs as JSON.",
     ),
 ) -> None:
-    payloads = list_run_manifests(artifacts_dir, task_type=task_type, limit=limit)
+    payloads = list_run_manifests(artifacts_dir, task_type=task_type, task_contains=task_contains, limit=limit)
 
     if json_output:
         typer.echo(json.dumps(payloads, indent=2, ensure_ascii=False))

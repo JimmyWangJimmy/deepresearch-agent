@@ -119,6 +119,15 @@ def test_runs_endpoint_filters_by_task_type_and_limit(tmp_path):
     assert len(payload) == 1
     assert payload[0]["plan"]["task_type"] == "file_intelligence"
 
+    searched = client.get(
+        "/runs",
+        params={"artifacts_dir": str(tmp_path), "task_contains": "文件"},
+    )
+    assert searched.status_code == 200
+    searched_payload = searched.json()["runs"]
+    assert len(searched_payload) == 1
+    assert "文件" in searched_payload[0]["task"]
+
 
 def test_api_reports_provider_configuration_errors(tmp_path, monkeypatch):
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)

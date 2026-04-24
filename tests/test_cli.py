@@ -107,6 +107,15 @@ def test_runs_filters_by_task_type_and_limit(tmp_path):
     assert len(payload) == 1
     assert payload[0]["plan"]["task_type"] == "file_intelligence"
 
+    searched = runner.invoke(
+        app,
+        ["runs", "--artifacts-dir", str(tmp_path), "--task-contains", "文件", "--json"],
+    )
+    assert searched.exit_code == 0
+    searched_payload = json.loads(searched.stdout)
+    assert len(searched_payload) == 1
+    assert "文件" in searched_payload[0]["task"]
+
 
 def test_verify_checks_run_integrity(tmp_path):
     source_file = tmp_path / "verify.txt"

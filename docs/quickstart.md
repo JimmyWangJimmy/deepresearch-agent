@@ -132,6 +132,7 @@ curl "http://localhost:8000/runs?artifacts_dir=demo/api-artifacts&task_contains=
 curl "http://localhost:8000/runs?artifacts_dir=demo/api-artifacts&has_warnings=true"
 curl "http://localhost:8000/runs?artifacts_dir=demo/api-artifacts&min_quality_score=0.75"
 curl "http://localhost:8000/runs?artifacts_dir=demo/api-artifacts&max_source_count=1"
+curl "http://localhost:8000/runs?artifacts_dir=demo/api-artifacts&min_event_count=1"
 curl "http://localhost:8000/runs/$RUN_ID/quality?artifacts_dir=demo/api-artifacts"
 curl "http://localhost:8000/runs/$RUN_ID/deliverables?artifacts_dir=demo/api-artifacts"
 curl "http://localhost:8000/runs/$RUN_ID/delivery-manifest?artifacts_dir=demo/api-artifacts"

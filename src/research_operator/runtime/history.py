@@ -15,6 +15,8 @@ def list_run_manifests(
     max_quality_score: float | None = None,
     min_source_count: int | None = None,
     max_source_count: int | None = None,
+    min_event_count: int | None = None,
+    max_event_count: int | None = None,
     limit: int | None = None,
 ) -> list[dict]:
     manifests = sorted(artifacts_dir.glob("*/run_manifest.json"), reverse=True)
@@ -54,6 +56,18 @@ def list_run_manifests(
             for payload in payloads
             if read_run_source_count(artifacts_dir / payload["run_id"]) <= max_source_count
         ]
+    if min_event_count is not None:
+        payloads = [
+            payload
+            for payload in payloads
+            if read_run_event_count(artifacts_dir / payload["run_id"]) >= min_event_count
+        ]
+    if max_event_count is not None:
+        payloads = [
+            payload
+            for payload in payloads
+            if read_run_event_count(artifacts_dir / payload["run_id"]) <= max_event_count
+        ]
     if limit is not None:
         payloads = payloads[:limit]
     return payloads
@@ -81,3 +95,11 @@ def read_run_source_count(run_dir: Path) -> int:
         return 0
     payload = json.loads(quality_path.read_text(encoding="utf-8"))
     return int(payload.get("source_count", 0))
+
+
+def read_run_event_count(run_dir: Path) -> int:
+    quality_path = run_dir / "quality.json"
+    if not quality_path.exists():
+        return 0
+    payload = json.loads(quality_path.read_text(encoding="utf-8"))
+    return int(payload.get("event_count", 0))

@@ -178,6 +178,18 @@ def runs(
         min=0,
         help="Optional maximum source count filter.",
     ),
+    min_event_count: int | None = typer.Option(
+        None,
+        "--min-event-count",
+        min=0,
+        help="Optional minimum structured event count filter.",
+    ),
+    max_event_count: int | None = typer.Option(
+        None,
+        "--max-event-count",
+        min=0,
+        help="Optional maximum structured event count filter.",
+    ),
     limit: int | None = typer.Option(
         None,
         "--limit",
@@ -199,6 +211,8 @@ def runs(
         max_quality_score=max_quality_score,
         min_source_count=min_source_count,
         max_source_count=max_source_count,
+        min_event_count=min_event_count,
+        max_event_count=max_event_count,
         limit=limit,
     )
 

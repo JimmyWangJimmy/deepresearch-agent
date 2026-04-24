@@ -154,6 +154,18 @@ def test_runs_filters_by_task_type_and_limit(tmp_path):
         for item in single_source_payload
     )
 
+    eventful = runner.invoke(
+        app,
+        ["runs", "--artifacts-dir", str(tmp_path), "--min-event-count", "1", "--json"],
+    )
+    assert eventful.exit_code == 0
+    eventful_payload = json.loads(eventful.stdout)
+    assert len(eventful_payload) >= 1
+    assert all(
+        json.loads((tmp_path / item["run_id"] / "quality.json").read_text(encoding="utf-8"))["event_count"] >= 1
+        for item in eventful_payload
+    )
+
 
 def test_verify_checks_run_integrity(tmp_path):
     source_file = tmp_path / "verify.txt"

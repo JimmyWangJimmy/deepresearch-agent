@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -35,6 +36,8 @@ def list_run_manifests(
     max_event_count: int | None = None,
     min_entity_count: int | None = None,
     max_entity_count: int | None = None,
+    min_created_age_minutes: float | None = None,
+    max_created_age_minutes: float | None = None,
     sort_by: str = "created_at_desc",
     limit: int | None = None,
 ) -> list[dict]:
@@ -117,6 +120,7 @@ def list_run_manifests(
             for payload in payloads
             if read_run_entity_count(artifacts_dir / payload["run_id"]) <= max_entity_count
         ]
+    payloads = filter_runs_by_created_age(payloads, min_created_age_minutes, max_created_age_minutes)
     payloads = sort_run_payloads(payloads, artifacts_dir, sort_by)
     if limit is not None:
         payloads = payloads[:limit]
@@ -183,6 +187,49 @@ def sort_run_payloads(payloads: list[dict], artifacts_dir: Path, sort_by: str) -
         key=lambda payload: sort_key_for_payload(payload, artifacts_dir, field),
         reverse=reverse,
     )
+
+
+def filter_runs_by_created_age(
+    payloads: list[dict],
+    min_age_minutes: float | None = None,
+    max_age_minutes: float | None = None,
+) -> list[dict]:
+    if min_age_minutes is None and max_age_minutes is None:
+        return payloads
+    validate_run_created_age_range(min_age_minutes, max_age_minutes)
+    filtered: list[dict] = []
+    for payload in payloads:
+        age = run_created_age_minutes(payload)
+        if age is None:
+            continue
+        if min_age_minutes is not None and age < min_age_minutes:
+            continue
+        if max_age_minutes is not None and age > max_age_minutes:
+            continue
+        filtered.append(payload)
+    return filtered
+
+
+def validate_run_created_age_range(
+    min_age_minutes: float | None = None,
+    max_age_minutes: float | None = None,
+) -> None:
+    if min_age_minutes is not None and min_age_minutes < 0:
+        raise ValueError("min_created_age_minutes must be greater than or equal to 0.")
+    if max_age_minutes is not None and max_age_minutes < 0:
+        raise ValueError("max_created_age_minutes must be greater than or equal to 0.")
+    if min_age_minutes is not None and max_age_minutes is not None and min_age_minutes > max_age_minutes:
+        raise ValueError("min_created_age_minutes cannot be greater than max_created_age_minutes.")
+
+
+def run_created_age_minutes(payload: dict) -> float | None:
+    created_at = payload.get("created_at")
+    if not created_at:
+        return None
+    parsed = datetime.fromisoformat(str(created_at).replace("Z", "+00:00"))
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=UTC)
+    return round((datetime.now(UTC) - parsed).total_seconds() / 60, 3)
 
 
 def sort_key_for_payload(payload: dict, artifacts_dir: Path, field: str) -> Any:

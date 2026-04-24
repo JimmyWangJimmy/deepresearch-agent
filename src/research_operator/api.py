@@ -127,30 +127,37 @@ def list_runs(
     max_event_count: int | None = None,
     min_entity_count: int | None = None,
     max_entity_count: int | None = None,
+    min_created_age_minutes: float | None = None,
+    max_created_age_minutes: float | None = None,
     sort_by: str = "created_at_desc",
     limit: int | None = None,
 ) -> dict[str, list[dict]]:
     if sort_by not in RUN_SORT_FIELDS:
         raise HTTPException(status_code=400, detail=f"Unsupported sort_by: {sort_by}")
-    items = list_run_manifests(
-        Path(artifacts_dir),
-        task_type=task_type,
-        task_contains=task_contains,
-        has_deliverables=has_deliverables,
-        has_warnings=has_warnings,
-        min_quality_score=min_quality_score,
-        max_quality_score=max_quality_score,
-        min_average_evidence_score=min_average_evidence_score,
-        max_average_evidence_score=max_average_evidence_score,
-        min_source_count=min_source_count,
-        max_source_count=max_source_count,
-        min_event_count=min_event_count,
-        max_event_count=max_event_count,
-        min_entity_count=min_entity_count,
-        max_entity_count=max_entity_count,
-        sort_by=sort_by,
-        limit=limit,
-    )
+    try:
+        items = list_run_manifests(
+            Path(artifacts_dir),
+            task_type=task_type,
+            task_contains=task_contains,
+            has_deliverables=has_deliverables,
+            has_warnings=has_warnings,
+            min_quality_score=min_quality_score,
+            max_quality_score=max_quality_score,
+            min_average_evidence_score=min_average_evidence_score,
+            max_average_evidence_score=max_average_evidence_score,
+            min_source_count=min_source_count,
+            max_source_count=max_source_count,
+            min_event_count=min_event_count,
+            max_event_count=max_event_count,
+            min_entity_count=min_entity_count,
+            max_entity_count=max_entity_count,
+            min_created_age_minutes=min_created_age_minutes,
+            max_created_age_minutes=max_created_age_minutes,
+            sort_by=sort_by,
+            limit=limit,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     return {"runs": items}
 
 
@@ -171,31 +178,38 @@ def runs_summary(
     max_event_count: int | None = None,
     min_entity_count: int | None = None,
     max_entity_count: int | None = None,
+    min_created_age_minutes: float | None = None,
+    max_created_age_minutes: float | None = None,
     sort_by: str = "created_at_desc",
     limit: int | None = None,
 ) -> dict:
     if sort_by not in RUN_SORT_FIELDS:
         raise HTTPException(status_code=400, detail=f"Unsupported sort_by: {sort_by}")
     base = Path(artifacts_dir)
-    items = list_run_manifests(
-        base,
-        task_type=task_type,
-        task_contains=task_contains,
-        has_deliverables=has_deliverables,
-        has_warnings=has_warnings,
-        min_quality_score=min_quality_score,
-        max_quality_score=max_quality_score,
-        min_average_evidence_score=min_average_evidence_score,
-        max_average_evidence_score=max_average_evidence_score,
-        min_source_count=min_source_count,
-        max_source_count=max_source_count,
-        min_event_count=min_event_count,
-        max_event_count=max_event_count,
-        min_entity_count=min_entity_count,
-        max_entity_count=max_entity_count,
-        sort_by=sort_by,
-        limit=limit,
-    )
+    try:
+        items = list_run_manifests(
+            base,
+            task_type=task_type,
+            task_contains=task_contains,
+            has_deliverables=has_deliverables,
+            has_warnings=has_warnings,
+            min_quality_score=min_quality_score,
+            max_quality_score=max_quality_score,
+            min_average_evidence_score=min_average_evidence_score,
+            max_average_evidence_score=max_average_evidence_score,
+            min_source_count=min_source_count,
+            max_source_count=max_source_count,
+            min_event_count=min_event_count,
+            max_event_count=max_event_count,
+            min_entity_count=min_entity_count,
+            max_entity_count=max_entity_count,
+            min_created_age_minutes=min_created_age_minutes,
+            max_created_age_minutes=max_created_age_minutes,
+            sort_by=sort_by,
+            limit=limit,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     return summarize_run_manifests(items, base)
 
 

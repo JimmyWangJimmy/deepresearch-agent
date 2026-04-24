@@ -179,6 +179,20 @@ def test_runs_endpoint_filters_by_task_type_and_limit(tmp_path):
     deliverables_desc_payload = deliverables_desc.json()["runs"]
     assert (tmp_path / deliverables_desc_payload[0]["run_id"] / "delivery_bundle.zip").exists()
 
+    recent_runs = client.get(
+        "/runs",
+        params={"artifacts_dir": str(tmp_path), "max_created_age_minutes": 5},
+    )
+    assert recent_runs.status_code == 200
+    assert len(recent_runs.json()["runs"]) >= 3
+
+    invalid_created_age = client.get(
+        "/runs",
+        params={"artifacts_dir": str(tmp_path), "min_created_age_minutes": 10, "max_created_age_minutes": 5},
+    )
+    assert invalid_created_age.status_code == 400
+    assert "min_created_age_minutes cannot be greater" in invalid_created_age.json()["detail"]
+
     high_quality = client.get(
         "/runs",
         params={"artifacts_dir": str(tmp_path), "min_quality_score": 0.75},
@@ -253,7 +267,7 @@ def test_runs_endpoint_filters_by_task_type_and_limit(tmp_path):
 
     summary = client.get(
         "/runs/summary",
-        params={"artifacts_dir": str(tmp_path)},
+        params={"artifacts_dir": str(tmp_path), "max_created_age_minutes": 5},
     )
     assert summary.status_code == 200
     summary_payload = summary.json()

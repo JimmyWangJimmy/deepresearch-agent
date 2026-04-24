@@ -165,6 +165,30 @@ def test_runs_filters_by_task_type_and_limit(tmp_path):
     deliverables_desc_payload = json.loads(deliverables_desc.stdout)
     assert (tmp_path / deliverables_desc_payload[0]["run_id"] / "delivery_bundle.zip").exists()
 
+    recent_runs = runner.invoke(
+        app,
+        ["runs", "--artifacts-dir", str(tmp_path), "--max-created-age-minutes", "5", "--json"],
+    )
+    assert recent_runs.exit_code == 0
+    recent_payload = json.loads(recent_runs.stdout)
+    assert len(recent_payload) >= 3
+
+    invalid_created_age = runner.invoke(
+        app,
+        [
+            "runs",
+            "--artifacts-dir",
+            str(tmp_path),
+            "--min-created-age-minutes",
+            "10",
+            "--max-created-age-minutes",
+            "5",
+            "--json",
+        ],
+    )
+    assert invalid_created_age.exit_code != 0
+    assert "min_created_age_minutes cannot be greater" in invalid_created_age.output
+
     high_quality = runner.invoke(
         app,
         ["runs", "--artifacts-dir", str(tmp_path), "--min-quality-score", "0.75", "--json"],
@@ -239,7 +263,7 @@ def test_runs_filters_by_task_type_and_limit(tmp_path):
 
     summary = runner.invoke(
         app,
-        ["runs-summary", "--artifacts-dir", str(tmp_path)],
+        ["runs-summary", "--artifacts-dir", str(tmp_path), "--max-created-age-minutes", "5"],
     )
     assert summary.exit_code == 0
     summary_payload = json.loads(summary.stdout)

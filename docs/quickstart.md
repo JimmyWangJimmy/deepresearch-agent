@@ -136,6 +136,7 @@ curl "http://localhost:8000/runs?artifacts_dir=demo/api-artifacts&min_quality_sc
 curl "http://localhost:8000/runs?artifacts_dir=demo/api-artifacts&min_average_evidence_score=0.75"
 curl "http://localhost:8000/runs?artifacts_dir=demo/api-artifacts&sort_by=quality_desc"
 curl "http://localhost:8000/runs?artifacts_dir=demo/api-artifacts&sort_by=deliverables_desc"
+curl "http://localhost:8000/runs?artifacts_dir=demo/api-artifacts&max_created_age_minutes=60"
 curl "http://localhost:8000/runs?artifacts_dir=demo/api-artifacts&max_source_count=1"
 curl "http://localhost:8000/runs?artifacts_dir=demo/api-artifacts&min_event_count=1"
 curl "http://localhost:8000/runs?artifacts_dir=demo/api-artifacts&min_entity_count=1"

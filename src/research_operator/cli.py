@@ -230,6 +230,18 @@ def runs(
         min=0,
         help="Optional maximum extracted entity count filter.",
     ),
+    min_created_age_minutes: float | None = typer.Option(
+        None,
+        "--min-created-age-minutes",
+        min=0,
+        help="Only include runs created at least this many minutes ago.",
+    ),
+    max_created_age_minutes: float | None = typer.Option(
+        None,
+        "--max-created-age-minutes",
+        min=0,
+        help="Only include runs created no more than this many minutes ago.",
+    ),
     sort_by: str = typer.Option(
         "created_at_desc",
         "--sort-by",
@@ -247,25 +259,30 @@ def runs(
         help="Print runs as JSON.",
     ),
 ) -> None:
-    payloads = list_run_manifests(
-        artifacts_dir,
-        task_type=task_type,
-        task_contains=task_contains,
-        has_deliverables=has_deliverables,
-        has_warnings=has_warnings,
-        min_quality_score=min_quality_score,
-        max_quality_score=max_quality_score,
-        min_average_evidence_score=min_average_evidence_score,
-        max_average_evidence_score=max_average_evidence_score,
-        min_source_count=min_source_count,
-        max_source_count=max_source_count,
-        min_event_count=min_event_count,
-        max_event_count=max_event_count,
-        min_entity_count=min_entity_count,
-        max_entity_count=max_entity_count,
-        sort_by=sort_by,
-        limit=limit,
-    )
+    try:
+        payloads = list_run_manifests(
+            artifacts_dir,
+            task_type=task_type,
+            task_contains=task_contains,
+            has_deliverables=has_deliverables,
+            has_warnings=has_warnings,
+            min_quality_score=min_quality_score,
+            max_quality_score=max_quality_score,
+            min_average_evidence_score=min_average_evidence_score,
+            max_average_evidence_score=max_average_evidence_score,
+            min_source_count=min_source_count,
+            max_source_count=max_source_count,
+            min_event_count=min_event_count,
+            max_event_count=max_event_count,
+            min_entity_count=min_entity_count,
+            max_entity_count=max_entity_count,
+            min_created_age_minutes=min_created_age_minutes,
+            max_created_age_minutes=max_created_age_minutes,
+            sort_by=sort_by,
+            limit=limit,
+        )
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc)) from exc
 
     if json_output:
         typer.echo(json.dumps(payloads, indent=2, ensure_ascii=False))
@@ -309,28 +326,35 @@ def runs_summary(
     max_event_count: int | None = typer.Option(None, "--max-event-count", min=0, help="Optional maximum structured event count filter."),
     min_entity_count: int | None = typer.Option(None, "--min-entity-count", min=0, help="Optional minimum extracted entity count filter."),
     max_entity_count: int | None = typer.Option(None, "--max-entity-count", min=0, help="Optional maximum extracted entity count filter."),
+    min_created_age_minutes: float | None = typer.Option(None, "--min-created-age-minutes", min=0, help="Only summarize runs created at least this many minutes ago."),
+    max_created_age_minutes: float | None = typer.Option(None, "--max-created-age-minutes", min=0, help="Only summarize runs created no more than this many minutes ago."),
     sort_by: str = typer.Option("created_at_desc", "--sort-by", help=f"Sort order: {', '.join(RUN_SORT_FIELDS)}."),
     limit: int | None = typer.Option(None, "--limit", min=1, help="Optional limit for returned runs."),
 ) -> None:
-    payloads = list_run_manifests(
-        artifacts_dir,
-        task_type=task_type,
-        task_contains=task_contains,
-        has_deliverables=has_deliverables,
-        has_warnings=has_warnings,
-        min_quality_score=min_quality_score,
-        max_quality_score=max_quality_score,
-        min_average_evidence_score=min_average_evidence_score,
-        max_average_evidence_score=max_average_evidence_score,
-        min_source_count=min_source_count,
-        max_source_count=max_source_count,
-        min_event_count=min_event_count,
-        max_event_count=max_event_count,
-        min_entity_count=min_entity_count,
-        max_entity_count=max_entity_count,
-        sort_by=sort_by,
-        limit=limit,
-    )
+    try:
+        payloads = list_run_manifests(
+            artifacts_dir,
+            task_type=task_type,
+            task_contains=task_contains,
+            has_deliverables=has_deliverables,
+            has_warnings=has_warnings,
+            min_quality_score=min_quality_score,
+            max_quality_score=max_quality_score,
+            min_average_evidence_score=min_average_evidence_score,
+            max_average_evidence_score=max_average_evidence_score,
+            min_source_count=min_source_count,
+            max_source_count=max_source_count,
+            min_event_count=min_event_count,
+            max_event_count=max_event_count,
+            min_entity_count=min_entity_count,
+            max_entity_count=max_entity_count,
+            min_created_age_minutes=min_created_age_minutes,
+            max_created_age_minutes=max_created_age_minutes,
+            sort_by=sort_by,
+            limit=limit,
+        )
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc)) from exc
     typer.echo(json.dumps(summarize_run_manifests(payloads, artifacts_dir), indent=2, ensure_ascii=False))
 
 

@@ -918,6 +918,9 @@ def test_watch_create_and_run_detects_changes(tmp_path):
     assert status_summary_payload["watch_count"] == 1
     assert status_summary_payload["deliverable_count"] == 1
     assert status_summary_payload["recently_run_count"] == 1
+    assert status_summary_payload["enabled_rate"] == 1.0
+    assert status_summary_payload["deliverable_rate"] == 1.0
+    assert status_summary_payload["recently_run_rate"] == 1.0
     assert status_summary_payload["status_counts"]["changed"] == 1
 
     invalid_age_range = runner.invoke(
@@ -1195,6 +1198,8 @@ def test_watch_list_filters_enabled_state(tmp_path):
     summary_payload = json.loads(summary.stdout)
     assert summary_payload["watch_count"] == 1
     assert summary_payload["webhook_count"] == 1
+    assert summary_payload["enabled_rate"] == 1.0
+    assert summary_payload["webhook_rate"] == 1.0
 
     sorted_watches = runner.invoke(
         app,

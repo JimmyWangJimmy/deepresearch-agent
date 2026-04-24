@@ -389,10 +389,16 @@ def summarize_watches(specs: list[WatchSpec], watches_dir: Path | None = None) -
             "recently_run_count": 0,
             "status_counts": {status: 0 for status in sorted(WATCH_STATUS_FILTERS)},
             "average_interval_minutes": 0.0,
+            "enabled_rate": 0.0,
+            "due_rate": 0.0,
+            "webhook_rate": 0.0,
+            "deliverable_rate": 0.0,
+            "recently_run_rate": 0.0,
         }
 
+    total = len(specs)
     enabled_count = sum(1 for spec in specs if spec.enabled)
-    disabled_count = len(specs) - enabled_count
+    disabled_count = total - enabled_count
     due_count = sum(1 for spec in specs if is_watch_due(spec))
     webhook_count = sum(1 for spec in specs if spec.webhook_url)
     deliverable_count = sum(1 for spec in specs if watch_has_deliverables(spec.watch_id, watches_dir))
@@ -401,10 +407,10 @@ def summarize_watches(specs: list[WatchSpec], watches_dir: Path | None = None) -
         status: sum(1 for spec in specs if watch_execution_status(spec.watch_id, watches_dir) == status)
         for status in sorted(WATCH_STATUS_FILTERS)
     }
-    average_interval_minutes = round(sum(spec.interval_minutes for spec in specs) / len(specs), 3)
+    average_interval_minutes = round(sum(spec.interval_minutes for spec in specs) / total, 3)
 
     return {
-        "watch_count": len(specs),
+        "watch_count": total,
         "enabled_count": enabled_count,
         "disabled_count": disabled_count,
         "due_count": due_count,
@@ -413,6 +419,11 @@ def summarize_watches(specs: list[WatchSpec], watches_dir: Path | None = None) -
         "recently_run_count": recently_run_count,
         "status_counts": status_counts,
         "average_interval_minutes": average_interval_minutes,
+        "enabled_rate": round(enabled_count / total, 3),
+        "due_rate": round(due_count / total, 3),
+        "webhook_rate": round(webhook_count / total, 3),
+        "deliverable_rate": round(deliverable_count / total, 3),
+        "recently_run_rate": round(recently_run_count / total, 3),
     }
 
 

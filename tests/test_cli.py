@@ -202,6 +202,15 @@ def test_runs_filters_by_task_type_and_limit(tmp_path):
     ]
     assert scores == sorted(scores, reverse=True)
 
+    summary = runner.invoke(
+        app,
+        ["runs-summary", "--artifacts-dir", str(tmp_path)],
+    )
+    assert summary.exit_code == 0
+    summary_payload = json.loads(summary.stdout)
+    assert summary_payload["run_count"] >= 3
+    assert "research" in summary_payload["task_types"] or "monitor" in summary_payload["task_types"]
+
 
 def test_verify_checks_run_integrity(tmp_path):
     source_file = tmp_path / "verify.txt"

@@ -12,7 +12,7 @@ from rich.table import Table
 from research_operator.config import AppConfig
 from research_operator.runtime.doctor import run_doctor
 from research_operator.runtime.engine import execute_task
-from research_operator.runtime.history import RUN_SORT_FIELDS, list_run_manifests
+from research_operator.runtime.history import RUN_SORT_FIELDS, list_run_manifests, summarize_run_manifests
 from research_operator.runtime.monitoring import (
     build_watch_sources,
     delete_watch,
@@ -271,6 +271,50 @@ def runs(
         )
 
     console.print(table)
+
+
+@app.command("runs-summary")
+def runs_summary(
+    artifacts_dir: Path = typer.Option(
+        AppConfig().artifacts_dir,
+        "--artifacts-dir",
+        help="Directory that stores run artifacts.",
+    ),
+    task_type: TaskType | None = typer.Option(None, "--task-type", help="Optional task type filter."),
+    task_contains: str | None = typer.Option(None, "--task-contains", help="Optional substring filter applied to the task text."),
+    has_warnings: bool | None = typer.Option(None, "--has-warnings/--no-has-warnings", help="Optional quality warning filter."),
+    min_quality_score: float | None = typer.Option(None, "--min-quality-score", min=0.0, max=1.0, help="Optional minimum quality score filter."),
+    max_quality_score: float | None = typer.Option(None, "--max-quality-score", min=0.0, max=1.0, help="Optional maximum quality score filter."),
+    min_average_evidence_score: float | None = typer.Option(None, "--min-average-evidence-score", min=0.0, max=2.0, help="Optional minimum average evidence score filter."),
+    max_average_evidence_score: float | None = typer.Option(None, "--max-average-evidence-score", min=0.0, max=2.0, help="Optional maximum average evidence score filter."),
+    min_source_count: int | None = typer.Option(None, "--min-source-count", min=0, help="Optional minimum source count filter."),
+    max_source_count: int | None = typer.Option(None, "--max-source-count", min=0, help="Optional maximum source count filter."),
+    min_event_count: int | None = typer.Option(None, "--min-event-count", min=0, help="Optional minimum structured event count filter."),
+    max_event_count: int | None = typer.Option(None, "--max-event-count", min=0, help="Optional maximum structured event count filter."),
+    min_entity_count: int | None = typer.Option(None, "--min-entity-count", min=0, help="Optional minimum extracted entity count filter."),
+    max_entity_count: int | None = typer.Option(None, "--max-entity-count", min=0, help="Optional maximum extracted entity count filter."),
+    sort_by: str = typer.Option("created_at_desc", "--sort-by", help=f"Sort order: {', '.join(RUN_SORT_FIELDS)}."),
+    limit: int | None = typer.Option(None, "--limit", min=1, help="Optional limit for returned runs."),
+) -> None:
+    payloads = list_run_manifests(
+        artifacts_dir,
+        task_type=task_type,
+        task_contains=task_contains,
+        has_warnings=has_warnings,
+        min_quality_score=min_quality_score,
+        max_quality_score=max_quality_score,
+        min_average_evidence_score=min_average_evidence_score,
+        max_average_evidence_score=max_average_evidence_score,
+        min_source_count=min_source_count,
+        max_source_count=max_source_count,
+        min_event_count=min_event_count,
+        max_event_count=max_event_count,
+        min_entity_count=min_entity_count,
+        max_entity_count=max_entity_count,
+        sort_by=sort_by,
+        limit=limit,
+    )
+    typer.echo(json.dumps(summarize_run_manifests(payloads, artifacts_dir), indent=2, ensure_ascii=False))
 
 
 @app.command()

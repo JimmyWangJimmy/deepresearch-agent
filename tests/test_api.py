@@ -216,6 +216,15 @@ def test_runs_endpoint_filters_by_task_type_and_limit(tmp_path):
     ]
     assert scores == sorted(scores, reverse=True)
 
+    summary = client.get(
+        "/runs/summary",
+        params={"artifacts_dir": str(tmp_path)},
+    )
+    assert summary.status_code == 200
+    summary_payload = summary.json()
+    assert summary_payload["run_count"] >= 3
+    assert "research" in summary_payload["task_types"] or "monitor" in summary_payload["task_types"]
+
 
 def test_api_reports_provider_configuration_errors(tmp_path, monkeypatch):
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)

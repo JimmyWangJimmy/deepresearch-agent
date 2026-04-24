@@ -8,7 +8,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from research_operator.runtime.engine import execute_task
-from research_operator.runtime.history import RUN_SORT_FIELDS, list_run_manifests
+from research_operator.runtime.history import RUN_SORT_FIELDS, list_run_manifests, summarize_run_manifests
 from research_operator.runtime.monitoring import (
     build_watch_sources,
     delete_watch,
@@ -141,6 +141,49 @@ def list_runs(
         limit=limit,
     )
     return {"runs": items}
+
+
+@app.get("/runs/summary")
+def runs_summary(
+    artifacts_dir: str = "artifacts",
+    task_type: TaskType | None = None,
+    task_contains: str | None = None,
+    has_warnings: bool | None = None,
+    min_quality_score: float | None = None,
+    max_quality_score: float | None = None,
+    min_average_evidence_score: float | None = None,
+    max_average_evidence_score: float | None = None,
+    min_source_count: int | None = None,
+    max_source_count: int | None = None,
+    min_event_count: int | None = None,
+    max_event_count: int | None = None,
+    min_entity_count: int | None = None,
+    max_entity_count: int | None = None,
+    sort_by: str = "created_at_desc",
+    limit: int | None = None,
+) -> dict:
+    if sort_by not in RUN_SORT_FIELDS:
+        raise HTTPException(status_code=400, detail=f"Unsupported sort_by: {sort_by}")
+    base = Path(artifacts_dir)
+    items = list_run_manifests(
+        base,
+        task_type=task_type,
+        task_contains=task_contains,
+        has_warnings=has_warnings,
+        min_quality_score=min_quality_score,
+        max_quality_score=max_quality_score,
+        min_average_evidence_score=min_average_evidence_score,
+        max_average_evidence_score=max_average_evidence_score,
+        min_source_count=min_source_count,
+        max_source_count=max_source_count,
+        min_event_count=min_event_count,
+        max_event_count=max_event_count,
+        min_entity_count=min_entity_count,
+        max_entity_count=max_entity_count,
+        sort_by=sort_by,
+        limit=limit,
+    )
+    return summarize_run_manifests(items, base)
 
 
 @app.get("/runs/{run_id}")

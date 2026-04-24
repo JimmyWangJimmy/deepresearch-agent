@@ -114,6 +114,54 @@ def list_run_manifests(
     return payloads
 
 
+def summarize_run_manifests(payloads: list[dict], artifacts_dir: Path) -> dict[str, Any]:
+    if not payloads:
+        return {
+            "run_count": 0,
+            "task_types": {},
+            "average_quality_score": 0.0,
+            "average_evidence_score": 0.0,
+            "average_source_count": 0.0,
+            "average_event_count": 0.0,
+            "average_entity_count": 0.0,
+            "warning_run_count": 0,
+        }
+
+    task_types: dict[str, int] = {}
+    quality_scores: list[float] = []
+    evidence_scores: list[float] = []
+    source_counts: list[int] = []
+    event_counts: list[int] = []
+    entity_counts: list[int] = []
+    warning_run_count = 0
+
+    for payload in payloads:
+        run_dir = artifacts_dir / payload["run_id"]
+        task_type = payload.get("plan", {}).get("task_type", "unknown")
+        task_types[task_type] = task_types.get(task_type, 0) + 1
+        quality_scores.append(read_run_quality_score(run_dir))
+        evidence_scores.append(read_run_average_evidence_score(run_dir))
+        source_counts.append(read_run_source_count(run_dir))
+        event_counts.append(read_run_event_count(run_dir))
+        entity_counts.append(read_run_entity_count(run_dir))
+        if run_has_warnings(run_dir):
+            warning_run_count += 1
+
+    def avg(values: list[float | int]) -> float:
+        return round(sum(values) / len(values), 3) if values else 0.0
+
+    return {
+        "run_count": len(payloads),
+        "task_types": task_types,
+        "average_quality_score": avg(quality_scores),
+        "average_evidence_score": avg(evidence_scores),
+        "average_source_count": avg(source_counts),
+        "average_event_count": avg(event_counts),
+        "average_entity_count": avg(entity_counts),
+        "warning_run_count": warning_run_count,
+    }
+
+
 def sort_run_payloads(payloads: list[dict], artifacts_dir: Path, sort_by: str) -> list[dict]:
     field, reverse = RUN_SORT_FIELDS.get(sort_by, RUN_SORT_FIELDS["created_at_desc"])
     return sorted(

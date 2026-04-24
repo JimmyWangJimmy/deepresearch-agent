@@ -26,6 +26,8 @@ from research_operator.schemas import (
 WATCH_SORT_FIELDS = {
     "created_at_desc": ("created_at", True),
     "created_at_asc": ("created_at", False),
+    "last_run_at_desc": ("last_run_at", True),
+    "last_run_at_asc": ("last_run_at", False),
     "next_run_at_desc": ("next_run_at", True),
     "next_run_at_asc": ("next_run_at", False),
     "interval_desc": ("interval_minutes", True),
@@ -177,6 +179,8 @@ def sort_watches(specs: list[WatchSpec], sort_by: str = "created_at_desc") -> li
 
 
 def watch_sort_key(spec: WatchSpec, field: str):
+    if field == "last_run_at":
+        return spec.last_run_at.isoformat() if spec.last_run_at else ""
     if field == "next_run_at":
         return spec.next_run_at.isoformat() if spec.next_run_at else ""
     if field == "interval_minutes":

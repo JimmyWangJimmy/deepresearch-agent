@@ -631,6 +631,26 @@ def test_watch_create_and_run_detects_changes(tmp_path):
     )
     assert create.exit_code == 0
     created = json.loads(create.stdout)
+    never_run_file = tmp_path / "never-run.txt"
+    never_run_file.write_text("待监控版本", encoding="utf-8")
+    never_run = runner.invoke(
+        app,
+        [
+            "watch",
+            "create",
+            "未运行监控",
+            "--task",
+            "监控未运行排序",
+            "--interval-minutes",
+            "60",
+            "--file",
+            str(never_run_file),
+            "--watches-dir",
+            str(tmp_path / "watches"),
+        ],
+    )
+    assert never_run.exit_code == 0
+    never_run_watch = json.loads(never_run.stdout)
 
     first_run = runner.invoke(
         app,
@@ -770,6 +790,40 @@ def test_watch_create_and_run_detects_changes(tmp_path):
     recent_payload = json.loads(recent_list.stdout)
     assert len(recent_payload) == 1
     assert recent_payload[0]["watch_id"] == created["watch_id"]
+
+    last_run_desc = runner.invoke(
+        app,
+        [
+            "watch",
+            "list",
+            "--json",
+            "--sort-by",
+            "last_run_at_desc",
+            "--watches-dir",
+            str(tmp_path / "watches"),
+        ],
+    )
+    assert last_run_desc.exit_code == 0
+    last_run_desc_payload = json.loads(last_run_desc.stdout)
+    assert last_run_desc_payload[0]["watch_id"] == created["watch_id"]
+    assert last_run_desc_payload[-1]["watch_id"] == never_run_watch["watch_id"]
+
+    last_run_asc = runner.invoke(
+        app,
+        [
+            "watch",
+            "list",
+            "--json",
+            "--sort-by",
+            "last_run_at_asc",
+            "--watches-dir",
+            str(tmp_path / "watches"),
+        ],
+    )
+    assert last_run_asc.exit_code == 0
+    last_run_asc_payload = json.loads(last_run_asc.stdout)
+    assert last_run_asc_payload[0]["watch_id"] == never_run_watch["watch_id"]
+    assert last_run_asc_payload[-1]["watch_id"] == created["watch_id"]
 
     status_summary = runner.invoke(
         app,

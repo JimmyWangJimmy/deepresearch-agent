@@ -751,7 +751,7 @@ def watch_list(
     sort_by: str = typer.Option(
         "created_at_desc",
         "--sort-by",
-        help=f"Sort order: {', '.join(WATCH_SORT_FIELDS)}.",
+        help=f"Sort order: {', '.join(WATCH_SORT_FIELDS)}. Use last_run_at_desc for freshest executions.",
     ),
 ) -> None:
     if enabled_only and disabled_only:

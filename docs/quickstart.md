@@ -169,6 +169,7 @@ curl -X POST "http://localhost:8000/watches/$WATCH_ID/run" \
 curl "http://localhost:8000/watches/$WATCH_ID?watches_dir=demo/api-watches"
 curl "http://localhost:8000/watches/summary?watches_dir=demo/api-watches"
 curl "http://localhost:8000/watches?watches_dir=demo/api-watches&sort_by=interval_desc"
+curl "http://localhost:8000/watches?watches_dir=demo/api-watches&sort_by=last_run_at_desc"
 curl "http://localhost:8000/watches?watches_dir=demo/api-watches&has_webhook=true"
 curl "http://localhost:8000/watches?watches_dir=demo/api-watches&has_deliverables=true"
 curl "http://localhost:8000/watches?watches_dir=demo/api-watches&status=changed"

@@ -81,7 +81,7 @@ def check_cli_surface(repo_root: Path) -> GateCheck:
 def check_watch_surface(repo_root: Path) -> GateCheck:
     cli_path = repo_root / "src" / "research_operator" / "cli.py"
     text = cli_path.read_text(encoding="utf-8")
-    required_tokens = ["watch_create", "watch_run", "watch_run_all", "watch_inspect", "watch_delivery_manifest", "watch_set_enabled", "watch_delete", "watch_summary", "--enabled-only", "--disabled-only", "--has-webhook/--no-has-webhook", "--has-deliverables/--no-has-deliverables", "--status", "--min-last-run-age-minutes", "--max-last-run-age-minutes", "--sort-by", "watch_list"]
+    required_tokens = ["watch_create", "watch_run", "watch_run_all", "watch_inspect", "watch_delivery_manifest", "watch_set_enabled", "watch_delete", "watch_summary", "--enabled-only", "--disabled-only", "--has-webhook/--no-has-webhook", "--has-deliverables/--no-has-deliverables", "--status", "--min-last-run-age-minutes", "--max-last-run-age-minutes", "--sort-by", "last_run_at_desc", "watch_list"]
     missing = [token for token in required_tokens if token not in text]
     passed = not missing
     detail = "watch surface complete" if passed else f"missing watch commands: {', '.join(missing)}"

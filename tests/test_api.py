@@ -262,6 +262,20 @@ def test_watch_lifecycle_via_api(tmp_path):
     listed = client.get("/watches", params={"watches_dir": str(watches_dir)})
     assert listed.status_code == 200
     assert listed.json()["watches"][0]["watch_id"] == watch_id
+    never_run_file = tmp_path / "never-api-watch.txt"
+    never_run_file.write_text("待监控版本", encoding="utf-8")
+    never_run = client.post(
+        "/watches",
+        json={
+            "name": "Never API Watch",
+            "task": "监控未运行排序",
+            "files": [str(never_run_file)],
+            "interval_minutes": 60,
+            "watches_dir": str(watches_dir),
+        },
+    )
+    assert never_run.status_code == 200
+    never_run_watch_id = never_run.json()["watch_id"]
 
     executed = client.post(
         f"/watches/{watch_id}/run",
@@ -305,6 +319,24 @@ def test_watch_lifecycle_via_api(tmp_path):
     recent_payload = recent_list.json()["watches"]
     assert len(recent_payload) == 1
     assert recent_payload[0]["watch_id"] == watch_id
+
+    last_run_desc = client.get(
+        "/watches",
+        params={"watches_dir": str(watches_dir), "sort_by": "last_run_at_desc"},
+    )
+    assert last_run_desc.status_code == 200
+    last_run_desc_payload = last_run_desc.json()["watches"]
+    assert last_run_desc_payload[0]["watch_id"] == watch_id
+    assert last_run_desc_payload[-1]["watch_id"] == never_run_watch_id
+
+    last_run_asc = client.get(
+        "/watches",
+        params={"watches_dir": str(watches_dir), "sort_by": "last_run_at_asc"},
+    )
+    assert last_run_asc.status_code == 200
+    last_run_asc_payload = last_run_asc.json()["watches"]
+    assert last_run_asc_payload[0]["watch_id"] == never_run_watch_id
+    assert last_run_asc_payload[-1]["watch_id"] == watch_id
 
     status_summary = client.get(
         "/watches/summary",

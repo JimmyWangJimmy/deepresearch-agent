@@ -138,6 +138,7 @@ def summarize_run_manifests(payloads: list[dict], artifacts_dir: Path) -> dict[s
             "average_event_count": 0.0,
             "average_entity_count": 0.0,
             "deliverable_run_count": 0,
+            "deliverable_rate": 0.0,
             "warning_run_count": 0,
         }
 
@@ -176,6 +177,7 @@ def summarize_run_manifests(payloads: list[dict], artifacts_dir: Path) -> dict[s
         "average_event_count": avg(event_counts),
         "average_entity_count": avg(entity_counts),
         "deliverable_run_count": deliverable_run_count,
+        "deliverable_rate": round(deliverable_run_count / len(payloads), 3),
         "warning_run_count": warning_run_count,
     }
 

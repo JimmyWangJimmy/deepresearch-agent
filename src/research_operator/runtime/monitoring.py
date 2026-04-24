@@ -88,6 +88,12 @@ def filter_watches_by_enabled(specs: list[WatchSpec], enabled: bool | None = Non
     return [spec for spec in specs if spec.enabled is enabled]
 
 
+def filter_watches_by_webhook(specs: list[WatchSpec], has_webhook: bool | None = None) -> list[WatchSpec]:
+    if has_webhook is None:
+        return specs
+    return [spec for spec in specs if bool(spec.webhook_url) is has_webhook]
+
+
 def sort_watches(specs: list[WatchSpec], sort_by: str = "created_at_desc") -> list[WatchSpec]:
     field, reverse = WATCH_SORT_FIELDS.get(sort_by, WATCH_SORT_FIELDS["created_at_desc"])
     return sorted(specs, key=lambda spec: watch_sort_key(spec, field), reverse=reverse)

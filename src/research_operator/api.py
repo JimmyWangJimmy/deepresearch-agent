@@ -14,6 +14,7 @@ from research_operator.runtime.monitoring import (
     delete_watch,
     execute_watch,
     filter_watches_by_enabled,
+    filter_watches_by_webhook,
     inspect_watch,
     inspect_watch_delivery_manifest,
     list_watches,
@@ -298,17 +299,28 @@ def create_watch(request: WatchRequest) -> dict:
 
 
 @app.get("/watches")
-def get_watches(watches_dir: str = ".dra/watches", enabled: bool | None = None, sort_by: str = "created_at_desc") -> dict[str, list[dict]]:
+def get_watches(
+    watches_dir: str = ".dra/watches",
+    enabled: bool | None = None,
+    has_webhook: bool | None = None,
+    sort_by: str = "created_at_desc",
+) -> dict[str, list[dict]]:
     if sort_by not in WATCH_SORT_FIELDS:
         raise HTTPException(status_code=400, detail=f"Unsupported sort_by: {sort_by}")
     watches = filter_watches_by_enabled(list_watches(Path(watches_dir)), enabled)
+    watches = filter_watches_by_webhook(watches, has_webhook)
     watches = sort_watches(watches, sort_by=sort_by)
     return {"watches": [item.model_dump(mode="json") for item in watches]}
 
 
 @app.get("/watches/summary")
-def get_watches_summary(watches_dir: str = ".dra/watches", enabled: bool | None = None) -> dict:
+def get_watches_summary(
+    watches_dir: str = ".dra/watches",
+    enabled: bool | None = None,
+    has_webhook: bool | None = None,
+) -> dict:
     watches = filter_watches_by_enabled(list_watches(Path(watches_dir)), enabled)
+    watches = filter_watches_by_webhook(watches, has_webhook)
     return summarize_watches(watches)
 
 

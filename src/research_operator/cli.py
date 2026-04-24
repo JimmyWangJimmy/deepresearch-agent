@@ -18,6 +18,7 @@ from research_operator.runtime.monitoring import (
     delete_watch,
     execute_watch,
     filter_watches_by_enabled,
+    filter_watches_by_webhook,
     inspect_watch,
     inspect_watch_delivery_manifest,
     list_due_watches,
@@ -717,6 +718,11 @@ def watch_list(
         "--disabled-only",
         help="Only list disabled watches.",
     ),
+    has_webhook: bool | None = typer.Option(
+        None,
+        "--has-webhook/--no-has-webhook",
+        help="Optional webhook configuration filter.",
+    ),
     sort_by: str = typer.Option(
         "created_at_desc",
         "--sort-by",
@@ -727,6 +733,7 @@ def watch_list(
         raise typer.BadParameter("--enabled-only and --disabled-only cannot be used together.")
     specs = list_due_watches(watches_dir) if due_only else list_watches(watches_dir)
     specs = filter_watches_by_enabled(specs, True if enabled_only else False if disabled_only else None)
+    specs = filter_watches_by_webhook(specs, has_webhook)
     specs = sort_watches(specs, sort_by=sort_by)
     if json_output:
         typer.echo(json.dumps([spec.model_dump(mode="json") for spec in specs], indent=2, ensure_ascii=False))
@@ -768,11 +775,17 @@ def watch_summary(
         "--disabled-only",
         help="Only summarize disabled watches.",
     ),
+    has_webhook: bool | None = typer.Option(
+        None,
+        "--has-webhook/--no-has-webhook",
+        help="Optional webhook configuration filter.",
+    ),
 ) -> None:
     if enabled_only and disabled_only:
         raise typer.BadParameter("--enabled-only and --disabled-only cannot be used together.")
     specs = list_watches(watches_dir)
     specs = filter_watches_by_enabled(specs, True if enabled_only else False if disabled_only else None)
+    specs = filter_watches_by_webhook(specs, has_webhook)
     typer.echo(json.dumps(summarize_watches(specs), indent=2, ensure_ascii=False))
 
 

@@ -313,6 +313,8 @@ def test_watch_lifecycle_via_api(tmp_path):
 def test_watch_list_filters_enabled_state_via_api(tmp_path):
     watch_file = tmp_path / "watch-enabled.txt"
     watch_file.write_text("版本一", encoding="utf-8")
+    webhook_file = tmp_path / "watch-webhook.txt"
+    webhook_file.write_text("版本一", encoding="utf-8")
     watches_dir = tmp_path / "watches"
 
     created = client.post(
@@ -326,6 +328,17 @@ def test_watch_list_filters_enabled_state_via_api(tmp_path):
     )
     assert created.status_code == 200
     watch_id = created.json()["watch_id"]
+    webhook_created = client.post(
+        "/watches",
+        json={
+            "name": "Webhook Filter Watch",
+            "task": "监控 webhook 过滤",
+            "files": [str(webhook_file)],
+            "webhook_url": "https://example.com/hook",
+            "watches_dir": str(watches_dir),
+        },
+    )
+    assert webhook_created.status_code == 200
 
     disabled = client.patch(
         f"/watches/{watch_id}",
@@ -335,7 +348,9 @@ def test_watch_list_filters_enabled_state_via_api(tmp_path):
 
     enabled_list = client.get("/watches", params={"watches_dir": str(watches_dir), "enabled": True})
     assert enabled_list.status_code == 200
-    assert enabled_list.json()["watches"] == []
+    enabled_payload = enabled_list.json()["watches"]
+    assert len(enabled_payload) == 1
+    assert enabled_payload[0]["webhook_url"] == "https://example.com/hook"
 
     disabled_list = client.get("/watches", params={"watches_dir": str(watches_dir), "enabled": False})
     assert disabled_list.status_code == 200
@@ -343,11 +358,17 @@ def test_watch_list_filters_enabled_state_via_api(tmp_path):
     assert len(payload) == 1
     assert payload[0]["watch_id"] == watch_id
 
-    summary = client.get("/watches/summary", params={"watches_dir": str(watches_dir), "enabled": False})
+    webhook_list = client.get("/watches", params={"watches_dir": str(watches_dir), "has_webhook": True})
+    assert webhook_list.status_code == 200
+    webhook_payload = webhook_list.json()["watches"]
+    assert len(webhook_payload) == 1
+    assert webhook_payload[0]["webhook_url"] == "https://example.com/hook"
+
+    summary = client.get("/watches/summary", params={"watches_dir": str(watches_dir), "has_webhook": True})
     assert summary.status_code == 200
     summary_payload = summary.json()
     assert summary_payload["watch_count"] == 1
-    assert summary_payload["disabled_count"] == 1
+    assert summary_payload["webhook_count"] == 1
 
     sorted_watches = client.get(
         "/watches",

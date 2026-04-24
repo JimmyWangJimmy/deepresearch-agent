@@ -899,6 +899,8 @@ def test_watch_list_due_only_filters_not_due(tmp_path):
 def test_watch_list_filters_enabled_state(tmp_path):
     watch_file = tmp_path / "stateful-watch.txt"
     watch_file.write_text("初始版本", encoding="utf-8")
+    webhook_file = tmp_path / "webhook-watch.txt"
+    webhook_file.write_text("初始版本", encoding="utf-8")
     create = runner.invoke(
         app,
         [
@@ -915,6 +917,23 @@ def test_watch_list_filters_enabled_state(tmp_path):
     )
     assert create.exit_code == 0
     watch_id = json.loads(create.stdout)["watch_id"]
+    webhook_create = runner.invoke(
+        app,
+        [
+            "watch",
+            "create",
+            "Webhook Filter Watch",
+            "--task",
+            "监控 webhook 过滤",
+            "--webhook-url",
+            "https://example.com/hook",
+            "--file",
+            str(webhook_file),
+            "--watches-dir",
+            str(tmp_path / "watches"),
+        ],
+    )
+    assert webhook_create.exit_code == 0
 
     disabled = runner.invoke(
         app,
@@ -934,7 +953,9 @@ def test_watch_list_filters_enabled_state(tmp_path):
         ["watch", "list", "--json", "--enabled-only", "--watches-dir", str(tmp_path / "watches")],
     )
     assert enabled_list.exit_code == 0
-    assert json.loads(enabled_list.stdout) == []
+    enabled_payload = json.loads(enabled_list.stdout)
+    assert len(enabled_payload) == 1
+    assert enabled_payload[0]["webhook_url"] == "https://example.com/hook"
 
     disabled_list = runner.invoke(
         app,
@@ -945,14 +966,23 @@ def test_watch_list_filters_enabled_state(tmp_path):
     assert len(payload) == 1
     assert payload[0]["watch_id"] == watch_id
 
+    webhook_list = runner.invoke(
+        app,
+        ["watch", "list", "--json", "--has-webhook", "--watches-dir", str(tmp_path / "watches")],
+    )
+    assert webhook_list.exit_code == 0
+    webhook_payload = json.loads(webhook_list.stdout)
+    assert len(webhook_payload) == 1
+    assert webhook_payload[0]["webhook_url"] == "https://example.com/hook"
+
     summary = runner.invoke(
         app,
-        ["watch", "summary", "--watches-dir", str(tmp_path / "watches")],
+        ["watch", "summary", "--has-webhook", "--watches-dir", str(tmp_path / "watches")],
     )
     assert summary.exit_code == 0
     summary_payload = json.loads(summary.stdout)
     assert summary_payload["watch_count"] == 1
-    assert summary_payload["disabled_count"] == 1
+    assert summary_payload["webhook_count"] == 1
 
     sorted_watches = runner.invoke(
         app,

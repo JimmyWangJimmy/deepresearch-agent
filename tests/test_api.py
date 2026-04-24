@@ -411,6 +411,9 @@ def test_watch_lifecycle_via_api(tmp_path):
     assert status_summary_payload["deliverable_rate"] == 1.0
     assert status_summary_payload["recently_run_rate"] == 1.0
     assert status_summary_payload["status_counts"]["changed"] == 1
+    assert status_summary_payload["status_rates"]["changed"] == 1.0
+    assert status_summary_payload["dominant_status"] == "changed"
+    assert status_summary_payload["dominant_status_rate"] == 1.0
 
     invalid_age_range = client.get(
         "/watches",
@@ -511,6 +514,8 @@ def test_watch_list_filters_enabled_state_via_api(tmp_path):
     assert summary_payload["webhook_count"] == 1
     assert summary_payload["enabled_rate"] == 1.0
     assert summary_payload["webhook_rate"] == 1.0
+    assert summary_payload["dominant_status"] in summary_payload["status_counts"]
+    assert summary_payload["dominant_status_rate"] == summary_payload["status_rates"][summary_payload["dominant_status"]]
 
     sorted_watches = client.get(
         "/watches",

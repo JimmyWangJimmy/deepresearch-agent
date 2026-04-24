@@ -388,6 +388,9 @@ def summarize_watches(specs: list[WatchSpec], watches_dir: Path | None = None) -
             "deliverable_count": 0,
             "recently_run_count": 0,
             "status_counts": {status: 0 for status in sorted(WATCH_STATUS_FILTERS)},
+            "status_rates": {status: 0.0 for status in sorted(WATCH_STATUS_FILTERS)},
+            "dominant_status": None,
+            "dominant_status_rate": 0.0,
             "average_interval_minutes": 0.0,
             "enabled_rate": 0.0,
             "due_rate": 0.0,
@@ -407,6 +410,8 @@ def summarize_watches(specs: list[WatchSpec], watches_dir: Path | None = None) -
         status: sum(1 for spec in specs if watch_execution_status(spec.watch_id, watches_dir) == status)
         for status in sorted(WATCH_STATUS_FILTERS)
     }
+    status_rates = {status: round(count / total, 3) for status, count in status_counts.items()}
+    dominant_status = max(status_counts, key=lambda status: (status_counts[status], status))
     average_interval_minutes = round(sum(spec.interval_minutes for spec in specs) / total, 3)
 
     return {
@@ -418,6 +423,9 @@ def summarize_watches(specs: list[WatchSpec], watches_dir: Path | None = None) -
         "deliverable_count": deliverable_count,
         "recently_run_count": recently_run_count,
         "status_counts": status_counts,
+        "status_rates": status_rates,
+        "dominant_status": dominant_status,
+        "dominant_status_rate": status_rates[dominant_status],
         "average_interval_minutes": average_interval_minutes,
         "enabled_rate": round(enabled_count / total, 3),
         "due_rate": round(due_count / total, 3),

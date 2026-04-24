@@ -57,6 +57,8 @@ def test_run_creates_artifacts(tmp_path):
     summary = json.loads((tmp_path / run_id / "run_summary.json").read_text(encoding="utf-8"))
     assert summary["quality_score"] == quality["score"]
     assert summary["primary_deliverables"]["bundle"].endswith("delivery_bundle.zip")
+    assert summary["source_highlights"]
+    assert summary["recent_events"]
 
 
 def test_inspect_reads_manifest(tmp_path):

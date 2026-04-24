@@ -74,6 +74,8 @@ def test_create_and_fetch_run_via_api(tmp_path):
     manifest_payload = delivery_manifest.json()
     assert manifest_payload["primary"]["bundle"].endswith("delivery_bundle.zip")
     assert "summary" in manifest_payload["all"]
+    assert manifest_payload["highlights"]["top_sources"]
+    assert manifest_payload["highlights"]["recent_events"]
 
 
 def test_api_reports_provider_configuration_errors(tmp_path, monkeypatch):

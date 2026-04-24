@@ -128,6 +128,7 @@ Then inspect and download:
 RUN_ID=<paste_run_id>
 curl "http://localhost:8000/runs/$RUN_ID/quality?artifacts_dir=demo/api-artifacts"
 curl "http://localhost:8000/runs/$RUN_ID/deliverables?artifacts_dir=demo/api-artifacts"
+curl "http://localhost:8000/runs/$RUN_ID/delivery-manifest?artifacts_dir=demo/api-artifacts"
 curl -o demo/api_delivery_bundle.zip \
   "http://localhost:8000/runs/$RUN_ID/deliverables/delivery_bundle?artifacts_dir=demo/api-artifacts"
 ```

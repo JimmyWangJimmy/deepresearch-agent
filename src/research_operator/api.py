@@ -100,6 +100,7 @@ def get_run_deliverables(run_id: str, artifacts_dir: str = "artifacts") -> dict:
 def get_run_delivery_manifest(run_id: str, artifacts_dir: str = "artifacts") -> dict:
     run_dir = require_run_dir(run_id, artifacts_dir)
     mapping = artifact_mapping(run_dir)
+    summary = json.loads((run_dir / "run_summary.json").read_text(encoding="utf-8"))
     manifest = {
         "run_id": run_id,
         "primary": {
@@ -108,6 +109,12 @@ def get_run_delivery_manifest(run_id: str, artifacts_dir: str = "artifacts") -> 
             "html_report": str(mapping["html_report"]),
             "quality": str(mapping["quality"]),
             "summary": str(mapping["summary"]),
+        },
+        "highlights": {
+            "quality_score": summary["quality_score"],
+            "warnings": summary["warnings"],
+            "top_sources": summary["source_highlights"],
+            "recent_events": summary["recent_events"],
         },
         "all": {
             name: str(path)

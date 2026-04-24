@@ -148,6 +148,8 @@ class RunSummary(BaseModel):
     quality_score: float
     warnings: list[str] = Field(default_factory=list)
     top_sources: list[str] = Field(default_factory=list)
+    source_highlights: list[str] = Field(default_factory=list)
+    recent_events: list[str] = Field(default_factory=list)
     primary_deliverables: dict[str, str] = Field(default_factory=dict)
 
 

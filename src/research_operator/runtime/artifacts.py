@@ -539,6 +539,14 @@ def build_run_summary(result: RunResult, quality: RunQuality) -> RunSummary:
         quality_score=quality.score,
         warnings=quality.warnings,
         top_sources=[source.label for source in result.sources[:3]],
+        source_highlights=[
+            f"{source.label} | score={source.evidence_score} | {source.locator}"
+            for source in result.sources[:3]
+        ],
+        recent_events=[
+            f"{event.event_date or 'undated'} | {event.event_type} | {event.subject}"
+            for event in result.events[:5]
+        ],
         primary_deliverables=primary_deliverables,
     )
 

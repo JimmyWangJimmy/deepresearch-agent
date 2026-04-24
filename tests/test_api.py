@@ -128,6 +128,14 @@ def test_runs_endpoint_filters_by_task_type_and_limit(tmp_path):
     assert len(searched_payload) == 1
     assert "文件" in searched_payload[0]["task"]
 
+    warned = client.get(
+        "/runs",
+        params={"artifacts_dir": str(tmp_path), "has_warnings": True},
+    )
+    assert warned.status_code == 200
+    warned_payload = warned.json()["runs"]
+    assert len(warned_payload) == 2
+
 
 def test_api_reports_provider_configuration_errors(tmp_path, monkeypatch):
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)

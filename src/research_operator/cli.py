@@ -147,6 +147,11 @@ def runs(
         "--task-contains",
         help="Optional substring filter applied to the task text.",
     ),
+    has_warnings: bool | None = typer.Option(
+        None,
+        "--has-warnings/--no-has-warnings",
+        help="Optional quality warning filter.",
+    ),
     limit: int | None = typer.Option(
         None,
         "--limit",
@@ -159,7 +164,13 @@ def runs(
         help="Print runs as JSON.",
     ),
 ) -> None:
-    payloads = list_run_manifests(artifacts_dir, task_type=task_type, task_contains=task_contains, limit=limit)
+    payloads = list_run_manifests(
+        artifacts_dir,
+        task_type=task_type,
+        task_contains=task_contains,
+        has_warnings=has_warnings,
+        limit=limit,
+    )
 
     if json_output:
         typer.echo(json.dumps(payloads, indent=2, ensure_ascii=False))

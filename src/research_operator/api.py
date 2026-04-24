@@ -106,9 +106,16 @@ def list_runs(
     artifacts_dir: str = "artifacts",
     task_type: TaskType | None = None,
     task_contains: str | None = None,
+    has_warnings: bool | None = None,
     limit: int | None = None,
 ) -> dict[str, list[dict]]:
-    items = list_run_manifests(Path(artifacts_dir), task_type=task_type, task_contains=task_contains, limit=limit)
+    items = list_run_manifests(
+        Path(artifacts_dir),
+        task_type=task_type,
+        task_contains=task_contains,
+        has_warnings=has_warnings,
+        limit=limit,
+    )
     return {"runs": items}
 
 

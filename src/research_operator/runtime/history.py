@@ -124,7 +124,7 @@ def list_run_manifests(
     payloads = sort_run_payloads(payloads, artifacts_dir, sort_by)
     if limit is not None:
         payloads = payloads[:limit]
-    return payloads
+    return [run_to_listing(payload, artifacts_dir) for payload in payloads]
 
 
 def summarize_run_manifests(payloads: list[dict], artifacts_dir: Path) -> dict[str, Any]:
@@ -208,6 +208,14 @@ def filter_runs_by_created_age(
             continue
         filtered.append(payload)
     return filtered
+
+
+def run_to_listing(payload: dict, artifacts_dir: Path) -> dict:
+    enriched = dict(payload)
+    run_dir = artifacts_dir / enriched["run_id"]
+    enriched["has_deliverables"] = run_has_deliverables(run_dir)
+    enriched["created_age_minutes"] = run_created_age_minutes(enriched)
+    return enriched
 
 
 def validate_run_created_age_range(

@@ -140,6 +140,8 @@ def test_runs_filters_by_task_type_and_limit(tmp_path):
     deliverable_payload = json.loads(deliverable_runs.stdout)
     assert deliverable_payload
     assert all((tmp_path / item["run_id"] / "delivery_bundle.zip").exists() for item in deliverable_payload)
+    assert all(item["has_deliverables"] is True for item in deliverable_payload)
+    assert all(item["created_age_minutes"] is not None for item in deliverable_payload)
 
     missing_deliverable_runs = runner.invoke(
         app,
@@ -148,6 +150,8 @@ def test_runs_filters_by_task_type_and_limit(tmp_path):
     assert missing_deliverable_runs.exit_code == 0
     missing_deliverable_payload = json.loads(missing_deliverable_runs.stdout)
     assert [item["run_id"] for item in missing_deliverable_payload] == [low_quality_payload["run_id"]]
+    assert missing_deliverable_payload[0]["has_deliverables"] is False
+    assert missing_deliverable_payload[0]["created_age_minutes"] is not None
 
     deliverables_asc = runner.invoke(
         app,

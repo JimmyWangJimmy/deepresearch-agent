@@ -140,6 +140,7 @@ def summarize_run_manifests(payloads: list[dict], artifacts_dir: Path) -> dict[s
             "deliverable_run_count": 0,
             "deliverable_rate": 0.0,
             "warning_run_count": 0,
+            "warning_rate": 0.0,
         }
 
     task_types: dict[str, int] = {}
@@ -179,6 +180,7 @@ def summarize_run_manifests(payloads: list[dict], artifacts_dir: Path) -> dict[s
         "deliverable_run_count": deliverable_run_count,
         "deliverable_rate": round(deliverable_run_count / len(payloads), 3),
         "warning_run_count": warning_run_count,
+        "warning_rate": round(warning_run_count / len(payloads), 3),
     }
 
 

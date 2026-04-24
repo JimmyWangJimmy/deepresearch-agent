@@ -283,6 +283,7 @@ def test_runs_filters_by_task_type_and_limit(tmp_path):
     assert summary_payload["run_count"] >= 3
     assert summary_payload["deliverable_run_count"] == summary_payload["run_count"] - 1
     assert summary_payload["deliverable_rate"] == round(summary_payload["deliverable_run_count"] / summary_payload["run_count"], 3)
+    assert summary_payload["warning_rate"] == round(summary_payload["warning_run_count"] / summary_payload["run_count"], 3)
     assert "research" in summary_payload["task_types"] or "monitor" in summary_payload["task_types"]
 
 

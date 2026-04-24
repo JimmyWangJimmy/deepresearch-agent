@@ -295,12 +295,26 @@ def test_watch_lifecycle_via_api(tmp_path):
     assert status_payload[0]["watch_id"] == watch_id
     assert status_payload[0]["status"] == "changed"
     assert status_payload[0]["has_deliverables"] is True
+    assert status_payload[0]["last_run_age_minutes"] is not None
 
-    status_summary = client.get("/watches/summary", params={"watches_dir": str(watches_dir), "status": "changed"})
+    recent_list = client.get(
+        "/watches",
+        params={"watches_dir": str(watches_dir), "max_last_run_age_minutes": 5},
+    )
+    assert recent_list.status_code == 200
+    recent_payload = recent_list.json()["watches"]
+    assert len(recent_payload) == 1
+    assert recent_payload[0]["watch_id"] == watch_id
+
+    status_summary = client.get(
+        "/watches/summary",
+        params={"watches_dir": str(watches_dir), "status": "changed", "max_last_run_age_minutes": 5},
+    )
     assert status_summary.status_code == 200
     status_summary_payload = status_summary.json()
     assert status_summary_payload["watch_count"] == 1
     assert status_summary_payload["deliverable_count"] == 1
+    assert status_summary_payload["recently_run_count"] == 1
     assert status_summary_payload["status_counts"]["changed"] == 1
 
     disabled = client.patch(

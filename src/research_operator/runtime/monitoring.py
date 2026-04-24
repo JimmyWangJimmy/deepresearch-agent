@@ -106,6 +106,26 @@ def filter_watches_by_deliverables(
     return [spec for spec in specs if watch_has_deliverables(spec.watch_id, watches_dir) is has_deliverables]
 
 
+def filter_watches_by_last_run_age(
+    specs: list[WatchSpec],
+    min_age_minutes: float | None = None,
+    max_age_minutes: float | None = None,
+) -> list[WatchSpec]:
+    if min_age_minutes is None and max_age_minutes is None:
+        return specs
+    filtered: list[WatchSpec] = []
+    for spec in specs:
+        age = watch_last_run_age_minutes(spec)
+        if age is None:
+            continue
+        if min_age_minutes is not None and age < min_age_minutes:
+            continue
+        if max_age_minutes is not None and age > max_age_minutes:
+            continue
+        filtered.append(spec)
+    return filtered
+
+
 def filter_watches_by_status(
     specs: list[WatchSpec],
     status: str | None,
@@ -122,7 +142,14 @@ def watch_to_listing(spec: WatchSpec, watches_dir: Path | None = None) -> dict:
     payload = spec.model_dump(mode="json")
     payload["status"] = watch_execution_status(spec.watch_id, watches_dir)
     payload["has_deliverables"] = watch_has_deliverables(spec.watch_id, watches_dir)
+    payload["last_run_age_minutes"] = watch_last_run_age_minutes(spec)
     return payload
+
+
+def watch_last_run_age_minutes(spec: WatchSpec) -> float | None:
+    if spec.last_run_at is None:
+        return None
+    return round((datetime.now(UTC) - spec.last_run_at).total_seconds() / 60, 3)
 
 
 def watch_has_deliverables(watch_id: str, watches_dir: Path | None = None) -> bool:
@@ -342,6 +369,7 @@ def summarize_watches(specs: list[WatchSpec], watches_dir: Path | None = None) -
             "due_count": 0,
             "webhook_count": 0,
             "deliverable_count": 0,
+            "recently_run_count": 0,
             "status_counts": {status: 0 for status in sorted(WATCH_STATUS_FILTERS)},
             "average_interval_minutes": 0.0,
         }
@@ -351,6 +379,7 @@ def summarize_watches(specs: list[WatchSpec], watches_dir: Path | None = None) -
     due_count = sum(1 for spec in specs if is_watch_due(spec))
     webhook_count = sum(1 for spec in specs if spec.webhook_url)
     deliverable_count = sum(1 for spec in specs if watch_has_deliverables(spec.watch_id, watches_dir))
+    recently_run_count = sum(1 for spec in specs if is_watch_recently_run(spec))
     status_counts = {
         status: sum(1 for spec in specs if watch_execution_status(spec.watch_id, watches_dir) == status)
         for status in sorted(WATCH_STATUS_FILTERS)
@@ -364,9 +393,15 @@ def summarize_watches(specs: list[WatchSpec], watches_dir: Path | None = None) -
         "due_count": due_count,
         "webhook_count": webhook_count,
         "deliverable_count": deliverable_count,
+        "recently_run_count": recently_run_count,
         "status_counts": status_counts,
         "average_interval_minutes": average_interval_minutes,
     }
+
+
+def is_watch_recently_run(spec: WatchSpec) -> bool:
+    age = watch_last_run_age_minutes(spec)
+    return age is not None and age <= spec.interval_minutes
 
 
 def render_watch_digest(spec: WatchSpec, execution: WatchExecution) -> str:

@@ -752,6 +752,24 @@ def test_watch_create_and_run_detects_changes(tmp_path):
     assert status_payload[0]["watch_id"] == created["watch_id"]
     assert status_payload[0]["status"] == "changed"
     assert status_payload[0]["has_deliverables"] is True
+    assert status_payload[0]["last_run_age_minutes"] is not None
+
+    recent_list = runner.invoke(
+        app,
+        [
+            "watch",
+            "list",
+            "--json",
+            "--max-last-run-age-minutes",
+            "5",
+            "--watches-dir",
+            str(tmp_path / "watches"),
+        ],
+    )
+    assert recent_list.exit_code == 0
+    recent_payload = json.loads(recent_list.stdout)
+    assert len(recent_payload) == 1
+    assert recent_payload[0]["watch_id"] == created["watch_id"]
 
     status_summary = runner.invoke(
         app,
@@ -760,6 +778,8 @@ def test_watch_create_and_run_detects_changes(tmp_path):
             "summary",
             "--status",
             "changed",
+            "--max-last-run-age-minutes",
+            "5",
             "--watches-dir",
             str(tmp_path / "watches"),
         ],
@@ -768,6 +788,7 @@ def test_watch_create_and_run_detects_changes(tmp_path):
     status_summary_payload = json.loads(status_summary.stdout)
     assert status_summary_payload["watch_count"] == 1
     assert status_summary_payload["deliverable_count"] == 1
+    assert status_summary_payload["recently_run_count"] == 1
     assert status_summary_payload["status_counts"]["changed"] == 1
 
     disabled = runner.invoke(

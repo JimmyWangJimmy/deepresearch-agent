@@ -172,6 +172,7 @@ curl "http://localhost:8000/watches?watches_dir=demo/api-watches&sort_by=interva
 curl "http://localhost:8000/watches?watches_dir=demo/api-watches&has_webhook=true"
 curl "http://localhost:8000/watches?watches_dir=demo/api-watches&has_deliverables=true"
 curl "http://localhost:8000/watches?watches_dir=demo/api-watches&status=changed"
+curl "http://localhost:8000/watches?watches_dir=demo/api-watches&max_last_run_age_minutes=60"
 curl "http://localhost:8000/watches/summary?watches_dir=demo/api-watches&status=changed"
 curl "http://localhost:8000/watches/$WATCH_ID/delivery-manifest?watches_dir=demo/api-watches"
 curl "http://localhost:8000/watches?watches_dir=demo/api-watches&enabled=true"

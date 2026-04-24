@@ -21,6 +21,7 @@ from research_operator.runtime.monitoring import (
     execute_watch,
     filter_watches_by_enabled,
     filter_watches_by_deliverables,
+    filter_watches_by_last_run_age,
     filter_watches_by_status,
     filter_watches_by_webhook,
     inspect_watch,
@@ -737,6 +738,16 @@ def watch_list(
         "--status",
         help=f"Optional execution status filter: {', '.join(sorted(WATCH_STATUS_FILTERS))}.",
     ),
+    min_last_run_age_minutes: float | None = typer.Option(
+        None,
+        "--min-last-run-age-minutes",
+        help="Only include watches last run at least this many minutes ago.",
+    ),
+    max_last_run_age_minutes: float | None = typer.Option(
+        None,
+        "--max-last-run-age-minutes",
+        help="Only include watches last run no more than this many minutes ago.",
+    ),
     sort_by: str = typer.Option(
         "created_at_desc",
         "--sort-by",
@@ -749,6 +760,7 @@ def watch_list(
     specs = filter_watches_by_enabled(specs, True if enabled_only else False if disabled_only else None)
     specs = filter_watches_by_webhook(specs, has_webhook)
     specs = filter_watches_by_deliverables(specs, has_deliverables, watches_dir)
+    specs = filter_watches_by_last_run_age(specs, min_last_run_age_minutes, max_last_run_age_minutes)
     try:
         specs = filter_watches_by_status(specs, status, watches_dir)
     except ValueError as exc:
@@ -764,17 +776,20 @@ def watch_list(
     table.add_column("Sources")
     table.add_column("Status")
     table.add_column("Deliverables")
+    table.add_column("Last Run Age")
     table.add_column("Interval")
     table.add_column("Next Run")
     table.add_column("Task")
     for spec in specs:
         listing = watch_to_listing(spec, watches_dir)
+        last_run_age = listing["last_run_age_minutes"]
         table.add_row(
             spec.watch_id,
             spec.name,
             str(len(spec.sources)),
             listing["status"],
             "yes" if listing["has_deliverables"] else "no",
+            str(last_run_age if last_run_age is not None else "never"),
             str(spec.interval_minutes),
             str(spec.next_run_at or "pending"),
             spec.task,
@@ -814,6 +829,16 @@ def watch_summary(
         "--status",
         help=f"Optional execution status filter: {', '.join(sorted(WATCH_STATUS_FILTERS))}.",
     ),
+    min_last_run_age_minutes: float | None = typer.Option(
+        None,
+        "--min-last-run-age-minutes",
+        help="Only summarize watches last run at least this many minutes ago.",
+    ),
+    max_last_run_age_minutes: float | None = typer.Option(
+        None,
+        "--max-last-run-age-minutes",
+        help="Only summarize watches last run no more than this many minutes ago.",
+    ),
 ) -> None:
     if enabled_only and disabled_only:
         raise typer.BadParameter("--enabled-only and --disabled-only cannot be used together.")
@@ -821,6 +846,7 @@ def watch_summary(
     specs = filter_watches_by_enabled(specs, True if enabled_only else False if disabled_only else None)
     specs = filter_watches_by_webhook(specs, has_webhook)
     specs = filter_watches_by_deliverables(specs, has_deliverables, watches_dir)
+    specs = filter_watches_by_last_run_age(specs, min_last_run_age_minutes, max_last_run_age_minutes)
     try:
         specs = filter_watches_by_status(specs, status, watches_dir)
     except ValueError as exc:

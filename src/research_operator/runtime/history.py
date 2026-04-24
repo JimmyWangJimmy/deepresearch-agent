@@ -132,6 +132,10 @@ def summarize_run_manifests(payloads: list[dict], artifacts_dir: Path) -> dict[s
         return {
             "run_count": 0,
             "task_types": {},
+            "task_type_counts": {},
+            "task_type_rates": {},
+            "dominant_task_type": None,
+            "dominant_task_type_rate": 0.0,
             "average_quality_score": 0.0,
             "average_evidence_score": 0.0,
             "average_source_count": 0.0,
@@ -169,18 +173,26 @@ def summarize_run_manifests(payloads: list[dict], artifacts_dir: Path) -> dict[s
     def avg(values: list[float | int]) -> float:
         return round(sum(values) / len(values), 3) if values else 0.0
 
+    total = len(payloads)
+    task_type_rates = {task_type: round(count / total, 3) for task_type, count in task_types.items()}
+    dominant_task_type = max(task_types, key=lambda task_type: (task_types[task_type], task_type))
+
     return {
-        "run_count": len(payloads),
+        "run_count": total,
         "task_types": task_types,
+        "task_type_counts": task_types,
+        "task_type_rates": task_type_rates,
+        "dominant_task_type": dominant_task_type,
+        "dominant_task_type_rate": task_type_rates[dominant_task_type],
         "average_quality_score": avg(quality_scores),
         "average_evidence_score": avg(evidence_scores),
         "average_source_count": avg(source_counts),
         "average_event_count": avg(event_counts),
         "average_entity_count": avg(entity_counts),
         "deliverable_run_count": deliverable_run_count,
-        "deliverable_rate": round(deliverable_run_count / len(payloads), 3),
+        "deliverable_rate": round(deliverable_run_count / total, 3),
         "warning_run_count": warning_run_count,
-        "warning_rate": round(warning_run_count / len(payloads), 3),
+        "warning_rate": round(warning_run_count / total, 3),
     }
 
 

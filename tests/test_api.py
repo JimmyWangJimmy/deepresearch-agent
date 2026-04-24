@@ -280,6 +280,10 @@ def test_runs_endpoint_filters_by_task_type_and_limit(tmp_path):
     assert summary_payload["deliverable_rate"] == round(summary_payload["deliverable_run_count"] / summary_payload["run_count"], 3)
     assert summary_payload["warning_rate"] == round(summary_payload["warning_run_count"] / summary_payload["run_count"], 3)
     assert "research" in summary_payload["task_types"] or "monitor" in summary_payload["task_types"]
+    assert summary_payload["task_type_counts"] == summary_payload["task_types"]
+    assert summary_payload["dominant_task_type"] in summary_payload["task_type_counts"]
+    assert summary_payload["dominant_task_type_rate"] == summary_payload["task_type_rates"][summary_payload["dominant_task_type"]]
+    assert abs(sum(summary_payload["task_type_rates"].values()) - 1.0) <= 0.001
 
 
 def test_api_reports_provider_configuration_errors(tmp_path, monkeypatch):

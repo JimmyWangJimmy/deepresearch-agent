@@ -2,8 +2,19 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 from research_operator.schemas import TaskType
+
+
+RUN_SORT_FIELDS = {
+    "created_at_desc": ("created_at", True),
+    "created_at_asc": ("created_at", False),
+    "quality_desc": ("quality_score", True),
+    "quality_asc": ("quality_score", False),
+    "source_count_desc": ("source_count", True),
+    "source_count_asc": ("source_count", False),
+}
 
 
 def list_run_manifests(
@@ -21,6 +32,7 @@ def list_run_manifests(
     max_event_count: int | None = None,
     min_entity_count: int | None = None,
     max_entity_count: int | None = None,
+    sort_by: str = "created_at_desc",
     limit: int | None = None,
 ) -> list[dict]:
     manifests = sorted(artifacts_dir.glob("*/run_manifest.json"), reverse=True)
@@ -96,9 +108,28 @@ def list_run_manifests(
             for payload in payloads
             if read_run_entity_count(artifacts_dir / payload["run_id"]) <= max_entity_count
         ]
+    payloads = sort_run_payloads(payloads, artifacts_dir, sort_by)
     if limit is not None:
         payloads = payloads[:limit]
     return payloads
+
+
+def sort_run_payloads(payloads: list[dict], artifacts_dir: Path, sort_by: str) -> list[dict]:
+    field, reverse = RUN_SORT_FIELDS.get(sort_by, RUN_SORT_FIELDS["created_at_desc"])
+    return sorted(
+        payloads,
+        key=lambda payload: sort_key_for_payload(payload, artifacts_dir, field),
+        reverse=reverse,
+    )
+
+
+def sort_key_for_payload(payload: dict, artifacts_dir: Path, field: str) -> Any:
+    run_dir = artifacts_dir / payload["run_id"]
+    if field == "quality_score":
+        return read_run_quality_score(run_dir)
+    if field == "source_count":
+        return read_run_source_count(run_dir)
+    return payload.get("created_at", "")
 
 
 def run_has_warnings(run_dir: Path) -> bool:

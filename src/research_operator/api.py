@@ -8,7 +8,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from research_operator.runtime.engine import execute_task
-from research_operator.runtime.history import list_run_manifests
+from research_operator.runtime.history import RUN_SORT_FIELDS, list_run_manifests
 from research_operator.runtime.monitoring import (
     build_watch_sources,
     delete_watch,
@@ -117,8 +117,11 @@ def list_runs(
     max_event_count: int | None = None,
     min_entity_count: int | None = None,
     max_entity_count: int | None = None,
+    sort_by: str = "created_at_desc",
     limit: int | None = None,
 ) -> dict[str, list[dict]]:
+    if sort_by not in RUN_SORT_FIELDS:
+        raise HTTPException(status_code=400, detail=f"Unsupported sort_by: {sort_by}")
     items = list_run_manifests(
         Path(artifacts_dir),
         task_type=task_type,
@@ -134,6 +137,7 @@ def list_runs(
         max_event_count=max_event_count,
         min_entity_count=min_entity_count,
         max_entity_count=max_entity_count,
+        sort_by=sort_by,
         limit=limit,
     )
     return {"runs": items}

@@ -12,7 +12,7 @@ from rich.table import Table
 from research_operator.config import AppConfig
 from research_operator.runtime.doctor import run_doctor
 from research_operator.runtime.engine import execute_task
-from research_operator.runtime.history import list_run_manifests
+from research_operator.runtime.history import RUN_SORT_FIELDS, list_run_manifests
 from research_operator.runtime.monitoring import (
     build_watch_sources,
     delete_watch,
@@ -216,6 +216,11 @@ def runs(
         min=0,
         help="Optional maximum extracted entity count filter.",
     ),
+    sort_by: str = typer.Option(
+        "created_at_desc",
+        "--sort-by",
+        help=f"Sort order: {', '.join(RUN_SORT_FIELDS)}.",
+    ),
     limit: int | None = typer.Option(
         None,
         "--limit",
@@ -243,6 +248,7 @@ def runs(
         max_event_count=max_event_count,
         min_entity_count=min_entity_count,
         max_entity_count=max_entity_count,
+        sort_by=sort_by,
         limit=limit,
     )
 

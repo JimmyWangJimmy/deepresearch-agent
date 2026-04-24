@@ -204,6 +204,18 @@ def test_runs_endpoint_filters_by_task_type_and_limit(tmp_path):
         for item in strong_evidence_payload
     )
 
+    sorted_by_quality = client.get(
+        "/runs",
+        params={"artifacts_dir": str(tmp_path), "sort_by": "quality_desc"},
+    )
+    assert sorted_by_quality.status_code == 200
+    sorted_payload = sorted_by_quality.json()["runs"]
+    scores = [
+        json.loads((tmp_path / item["run_id"] / "quality.json").read_text(encoding="utf-8"))["score"]
+        for item in sorted_payload
+    ]
+    assert scores == sorted(scores, reverse=True)
+
 
 def test_api_reports_provider_configuration_errors(tmp_path, monkeypatch):
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)

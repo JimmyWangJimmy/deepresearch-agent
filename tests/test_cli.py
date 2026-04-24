@@ -190,6 +190,18 @@ def test_runs_filters_by_task_type_and_limit(tmp_path):
         for item in strong_evidence_payload
     )
 
+    sorted_by_quality = runner.invoke(
+        app,
+        ["runs", "--artifacts-dir", str(tmp_path), "--sort-by", "quality_desc", "--json"],
+    )
+    assert sorted_by_quality.exit_code == 0
+    sorted_payload = json.loads(sorted_by_quality.stdout)
+    scores = [
+        json.loads((tmp_path / item["run_id"] / "quality.json").read_text(encoding="utf-8"))["score"]
+        for item in sorted_payload
+    ]
+    assert scores == sorted(scores, reverse=True)
+
 
 def test_verify_checks_run_integrity(tmp_path):
     source_file = tmp_path / "verify.txt"
